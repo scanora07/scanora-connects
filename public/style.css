@@ -1,0 +1,538 @@
+@font-face {
+  font-family: "Caveat";
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/caveat-500.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Caveat";
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/caveat-700.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Dancing Script";
+  font-weight: 700;
+  font-display: swap;
+  src: url("assets/dancing-700.ttf") format("truetype");
+}
+
+:root {
+  --rose: #e0316a;
+  --rose-deep: #b3123f;
+  --ink: #3b1d2a;
+  --paper: #fffaf0;
+  --text: #4a1d33;
+  --muted: #8a6573;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background: #fff3f1;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ---------- Soft, airy backdrop: blush and ivory with gentle light ---------- */
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(160deg, #fff9f5 0%, #ffeaf0 48%, #f8e7f6 100%);
+}
+
+/* A warm bloom of light behind the content */
+.bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 34%, rgba(255, 255, 255, .75) 0%, rgba(255, 255, 255, 0) 62%);
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  width: 90vmax;
+  height: 90vmax;
+  border-radius: 50%;
+  will-change: transform;
+}
+.o1 {
+  top: -48vmax; left: -42vmax;
+  background: radial-gradient(circle, rgba(255, 150, 185, .42) 0%, rgba(255, 150, 185, 0) 62%);
+  animation: drift1 34s ease-in-out infinite alternate;
+}
+.o2 {
+  bottom: -52vmax; right: -44vmax;
+  background: radial-gradient(circle, rgba(196, 168, 255, .36) 0%, rgba(196, 168, 255, 0) 62%);
+  animation: drift2 40s ease-in-out infinite alternate;
+}
+.o3 {
+  top: 18vmax; right: -56vmax;
+  background: radial-gradient(circle, rgba(255, 206, 156, .4) 0%, rgba(255, 206, 156, 0) 62%);
+  animation: drift3 46s ease-in-out infinite alternate;
+}
+@keyframes drift1 { to { transform: translate(22vmax, 16vmax); } }
+@keyframes drift2 { to { transform: translate(-24vmax, -14vmax); } }
+@keyframes drift3 { to { transform: translate(-28vmax, 12vmax); } }
+
+#magic { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+}
+
+.view { display: none; width: 100%; max-width: 440px; }
+.view.active { display: block; animation: fade .6s ease both; }
+@keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.script { font-family: "Caveat", "Segoe Script", "Bradley Hand", cursive; font-weight: 700; }
+.muted { color: var(--muted); }
+.center { text-align: center; }
+
+/* ---------- Form / expired card (frosted glass) ---------- */
+.card {
+  background: rgba(255, 255, 255, .72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, .95);
+  border-radius: 24px;
+  padding: 26px 22px;
+  box-shadow: 0 22px 54px rgba(190, 60, 110, .16), 0 2px 0 rgba(255, 255, 255, .8) inset;
+}
+.card h1 { margin: 0 0 4px; font-size: 2.7rem; line-height: 1.15; color: var(--rose-deep); }
+.card p { margin: 0 0 18px; }
+
+label { display: block; margin-bottom: 14px; }
+label > span { display: flex; justify-content: space-between; font-weight: 600; font-size: .9rem; margin-bottom: 6px; color: #6a2a45; }
+label small { font-weight: 400; color: var(--muted); }
+.hint { display: block; margin-top: 4px; font-size: .78rem; color: var(--muted); }
+
+input, textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 1rem;
+  padding: 12px 14px;
+  border: 1.5px solid #f2c9d6;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .85);
+  color: var(--ink);
+}
+input::placeholder, textarea::placeholder { color: rgba(120, 70, 90, .4); }
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--rose);
+  box-shadow: 0 0 0 3px rgba(224, 49, 106, .16);
+}
+textarea { resize: vertical; }
+
+.error { color: #b00020; font-size: .9rem; margin: 0 0 12px; }
+
+/* Small print at the bottom of the form */
+.card .fineprint { margin: 14px 0 0; font-size: .78rem; line-height: 1.4; text-align: center; color: var(--muted); }
+
+/* Tappable message ideas under the message box */
+.ideas { margin: -2px 0 18px; }
+.ideas-title { display: block; margin-bottom: 8px; font-size: .82rem; font-weight: 600; color: var(--muted); }
+.ideas-list { display: flex; flex-direction: column; gap: 8px; }
+.idea {
+  position: relative;
+  padding: 10px 12px 10px 34px;
+  border: 1.5px dashed #f0b9c9;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .6);
+  color: #6a2a45;
+  font: inherit;
+  font-size: .9rem;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.idea::before {
+  content: "+";
+  position: absolute;
+  left: 12px;
+  top: 9px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--rose);
+}
+.idea:active, .idea.added { background: #ffe4ec; border-style: solid; border-color: var(--rose); }
+.idea.added::before { content: "\2713"; }
+
+/* Preview bar over the gift screens */
+.pbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px max(14px, calc((100% - 440px) / 2)) max(10px, env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, .84);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255, 255, 255, .95);
+  box-shadow: 0 -8px 30px rgba(190, 60, 110, .16);
+}
+.pbar[hidden] { display: none; }
+.pbar-tag {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #ffe4ec;
+  color: var(--rose-deep);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.pbar-edit {
+  padding: 12px 20px;
+  border: 1.5px solid #f2c9d6;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--rose-deep);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pbar .btn { width: auto; flex: 1; padding: 12px; }
+body.previewing #app { padding-bottom: 92px; }
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff93b3 0%, #ef4a7e 55%, #d92a63 100%);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: .02em;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(224, 49, 106, .32), inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .6; }
+
+.btn-ghost { width: auto; padding: 11px 26px; font-size: 1rem; }
+
+/* ---------- Screen 1: the heart ---------- */
+.stage { text-align: center; }
+
+.heart-wrap {
+  position: relative;
+  width: min(46vw, 180px, 24dvh);
+  margin: 0 auto;
+}
+.heart {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 12px 18px rgba(224, 49, 106, .28));
+}
+
+/* Soft steady glow behind the heart (fades only, never changes size) */
+.halo {
+  position: absolute;
+  inset: -38%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 120, 165, .36) 0%, rgba(255, 120, 165, .12) 42%, transparent 70%);
+  animation: breathe 6s ease-in-out infinite;
+}
+@keyframes breathe { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+
+.level {
+  transform: translateY(175px);
+  animation: fill 3.6s cubic-bezier(.45, .05, .35, 1) forwards;
+}
+@keyframes fill { to { transform: translateY(58px); } }
+
+/* Three wave layers drifting at different speeds and directions */
+.wave { animation: flow 3.2s linear infinite; }
+.wave-back { animation-duration: 7s; animation-direction: reverse; }
+.wave-mid { animation-duration: 4.6s; animation-delay: -1.7s; }
+.wave-front { animation-duration: 3.2s; animation-delay: -2.2s; animation-direction: reverse; }
+@keyframes flow { to { transform: translateX(-100px); } }
+
+.bub { fill: rgba(255, 255, 255, .55); opacity: 0; animation: bubble 4.2s ease-in infinite; }
+.bub:nth-child(2) { animation-delay: .7s; animation-duration: 3.4s; }
+.bub:nth-child(3) { animation-delay: 1.5s; animation-duration: 4.8s; }
+.bub:nth-child(4) { animation-delay: 2.1s; animation-duration: 3.8s; }
+.bub:nth-child(5) { animation-delay: 2.8s; animation-duration: 4.4s; }
+.bub:nth-child(6) { animation-delay: 3.3s; animation-duration: 3.6s; }
+@keyframes bubble {
+  0% { opacity: 0; transform: translateY(0); }
+  15% { opacity: .9; }
+  100% { opacity: 0; transform: translateY(-46px); }
+}
+
+.reveal { margin-top: clamp(6px, 1.6dvh, 14px); }
+
+/* ---- The sealed envelope that opens the letter ---- */
+.open-env {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 0;
+  background: none;
+  color: var(--rose-deep);
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  -webkit-tap-highlight-color: transparent;
+}
+.reveal.show .open-env { animation: rise .8s var(--btn-delay, 1.3s) ease both; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+
+.env {
+  display: block;
+  width: clamp(96px, 14dvh, 130px);
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 8px 10px rgba(201, 24, 74, .28));
+  animation: bob 3.4s ease-in-out infinite;
+}
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-4px) rotate(1.5deg); } }
+
+.env-label {
+  font-weight: 700;
+  font-size: .95rem;
+  letter-spacing: .03em;
+  text-shadow: 0 1px 6px rgba(255, 255, 255, .9);
+}
+
+/* A soft glow ring on the seal that invites the tap */
+.env-seal { transform-box: fill-box; transform-origin: center; }
+.env-seal circle { filter: drop-shadow(0 0 4px rgba(255, 70, 120, .8)); animation: seal-glow 2.4s ease-in-out infinite; }
+@keyframes seal-glow { 0%, 100% { opacity: .85; } 50% { opacity: 1; } }
+
+.env-flap { transform-box: view-box; transform-origin: 60px 10px; }
+.env-paper, .env-paper-lines { transform-box: fill-box; }
+
+/* Tapped: the seal breaks away, the flap opens and the letter slides out */
+.open-env.opening { pointer-events: none; animation: none; opacity: 1; transform: none; }
+.open-env.opening .env { animation: none; }
+.open-env.opening .env-seal { animation: seal-break .45s ease-in forwards; }
+.open-env.opening .env-flap { animation: flap-open .55s .25s ease-in-out forwards; }
+.open-env.opening .env-paper,
+.open-env.opening .env-paper-lines { animation: letter-out .7s .6s cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes seal-break {
+  0% { transform: scale(1) rotate(0); opacity: 1; }
+  100% { transform: scale(1.5) rotate(25deg) translateY(10px); opacity: 0; }
+}
+@keyframes flap-open {
+  0% { transform: scaleY(1); opacity: 1; }
+  70% { transform: scaleY(-1); opacity: 1; }
+  100% { transform: scaleY(-1); opacity: 0; }
+}
+@keyframes letter-out { to { transform: translateY(-26px); } }
+
+/* The wish is drawn with a pen: every stroke is traced along its path, one after another.
+   Width follows the screen width but the height is capped by the screen height, so a long
+   wish shrinks to fit instead of pushing everything off the page. */
+.pen-svg {
+  display: block;
+  width: calc(min(100%, 300px) * var(--r, 1));
+  max-width: 100%;
+  max-height: 20dvh;
+  margin: 0 auto;
+  overflow: visible;
+  filter: drop-shadow(0 2px 5px rgba(224, 49, 106, .22));
+}
+.name .pen-svg { max-height: 11dvh; }
+.pen {
+  fill: none;
+  stroke: #b8134a;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: var(--len);
+  opacity: 0;
+}
+/* Name: a thick rose stroke with a thinner white one on top = rose border, white inside */
+.pen-border { stroke: #c4164f; stroke-width: 4.6; }
+.pen-fill { stroke: #fff; stroke-width: 2; }
+.reveal.show .pen { animation: draw var(--dur) var(--delay) linear forwards; }
+@keyframes draw {
+  from { opacity: 1; stroke-dashoffset: var(--len); }
+  to { opacity: 1; stroke-dashoffset: 0; }
+}
+
+/* Fallback for characters the pen font does not have: letters are wiped in one by one */
+.word { display: inline-block; white-space: nowrap; }
+.ch { display: inline-block; white-space: pre; clip-path: inset(-30% 110% -30% -10%); }
+.reveal.show .ch { animation: write var(--dur, .4s) var(--d, 0s) ease-in-out forwards; }
+@keyframes write { to { clip-path: inset(-30% -30% -30% -10%); } }
+
+.wish { margin: 0; color: #b8134a; }
+.wish.fallback {
+  font-family: "Dancing Script", "Segoe Script", "Brush Script MT", cursive;
+  font-weight: 700;
+  font-size: clamp(1.6rem, 7vw, 2.2rem);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  text-shadow: 0 2px 8px rgba(224, 49, 106, .2);
+}
+
+/* The name. Normally it is drawn with the pen (see .pen-border / .pen-fill above). This is the
+   fallback for characters the pen font lacks: the same cursive look, white inside, rose border. */
+.name {
+  margin: 10px 0 22px;
+  padding: .06em .1em .2em;
+  font-family: "Dancing Script", "Segoe Script", "Brush Script MT", cursive;
+  font-weight: 700;
+  font-size: clamp(2.2rem, 11vw, 3.2rem);
+  line-height: 1.25;
+  color: #fff;
+  -webkit-text-stroke: 4px #c4164f;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 8px rgba(133, 16, 47, .22);
+  overflow-wrap: anywhere;
+  opacity: 0;
+}
+.name[data-size="m"] { font-size: clamp(1.8rem, 8.5vw, 2.5rem); }
+.name[data-size="l"] { font-size: clamp(1.4rem, 6.5vw, 2rem); -webkit-text-stroke-width: 3px; }
+.name.pen-name { opacity: 1; padding: 0; margin: clamp(2px, .8dvh, 8px) 0 clamp(8px, 2dvh, 16px); text-shadow: none; }
+.reveal.show .name:not(.pen-name) { animation: pop .7s var(--name-delay, 2s) cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes pop { from { opacity: 0; transform: scale(.55); } to { opacity: 1; transform: none; } }
+
+/* ---------- Screen 2: the letter ----------
+   One grid drives everything: --rule is the distance between ruled lines. The heading and every
+   line of the message use it as their line height, and the lines are drawn at the baseline, so
+   the writing sits exactly on the rules and every rule is the same thickness, evenly spaced.
+   Every size in the grid is a whole number of pixels: a line that lands between two pixels gets
+   smeared across both and looks faint (it only "appears" when the page is zoomed), so the lines
+   are 2px thick and sit on whole-pixel positions.
+   Short messages use a roomy grid; longer ones step down so the paper stays a sensible length.
+   The paper grows with the message and the page scrolls, and the rules continue to the bottom. */
+.letter {
+  --rule: 40px;
+  --line-at: 32px; /* where, inside each line box, the rule's lower edge sits */
+  --fs: 31px; /* message text */
+  --hs: 40px; /* "Dear ..." heading */
+  --pad-top: calc(var(--rule) * 1.75);
+  --pad-left: 50px;
+  position: relative;
+  margin-bottom: 30px;
+  padding: var(--pad-top) 18px calc(var(--rule) * 2) var(--pad-left);
+  background-color: var(--paper);
+  background-image:
+    /* margin line: a double red rule, like a school notebook */
+    linear-gradient(to right, transparent 36px, rgba(226, 92, 120, .6) 36px, rgba(226, 92, 120, .6) 37px, transparent 37px, transparent 40px, rgba(226, 92, 120, .6) 40px, rgba(226, 92, 120, .6) 41px, transparent 41px),
+    /* the ruled lines: one tile per --rule, a 2px line on whole pixels */
+    linear-gradient(to bottom,
+      transparent calc(var(--line-at) - 2px),
+      rgba(98, 132, 190, .5) calc(var(--line-at) - 2px),
+      rgba(98, 132, 190, .5) var(--line-at),
+      transparent var(--line-at)),
+    /* a little warmth at the top and bottom edges, like real paper catching the light */
+    linear-gradient(to bottom, rgba(255, 255, 255, .7), rgba(255, 255, 255, 0) 8%, rgba(255, 255, 255, 0) 92%, rgba(190, 150, 110, .16)),
+    /* fine paper grain */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .38 0 0 0 0 .3 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-repeat: no-repeat, repeat-y, no-repeat, repeat;
+  background-size: 100% 100%, 100% var(--rule), 100% 100%, 180px 180px;
+  border-radius: 3px 10px 10px 3px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, .9) inset,
+    0 24px 50px rgba(160, 40, 80, .24),
+    0 3px 8px rgba(120, 60, 60, .16),
+    -3px 0 0 -1px rgba(170, 130, 100, .25); /* a thin page edge on the left */
+  animation: unfold .95s cubic-bezier(.2, .8, .2, 1) both;
+}
+/* Longer messages step the whole grid down a little (text never goes below 27px on a phone) */
+.letter[data-size="m"] { --rule: 37px; --line-at: 30px; --fs: 29px; --hs: 37px; }
+.letter[data-size="s"] { --rule: 34px; --line-at: 27px; --fs: 27px; --hs: 34px; }
+@keyframes unfold {
+  from { opacity: 0; transform: translateY(46px) scale(.94); }
+  to { opacity: 1; transform: none; }
+}
+.letter h2 {
+  margin: 0;
+  font-size: var(--hs);
+  line-height: var(--rule);
+  color: var(--rose-deep);
+  overflow-wrap: anywhere;
+  position: relative;
+  top: -4px; /* the larger heading letters sit on the rule like the body text */
+}
+.letter .body {
+  margin: 0;
+  font-size: var(--fs);
+  line-height: var(--rule);
+  font-weight: 500;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.seal {
+  position: absolute;
+  right: 14px;
+  bottom: -20px;
+  width: 58px;
+  height: 58px;
+  filter: drop-shadow(0 6px 8px rgba(80, 5, 30, .35));
+  transform: rotate(10deg);
+}
+
+/* ---------- Music button ---------- */
+.music {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(224, 49, 106, .22);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .85);
+  color: var(--rose);
+  box-shadow: 0 6px 18px rgba(224, 49, 106, .22);
+  cursor: pointer;
+}
+.music[hidden], body[data-view="heart"] .music { display: none; }
+.music .off { display: none; }
+.music.muted .on { display: none; }
+.music.muted .off { display: inline; }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb, .halo { animation: none; }
+  .env, .env-seal circle { animation: none; }
+  .open-env.opening * { animation: none !important; }
+  .bub { animation: none; }
+  .level { animation-duration: .01s; }
+  .wave { animation: none; }
+  .letter { animation: none; }
+  .reveal.show .ch { animation-duration: .01s; animation-delay: 0s; }
+  .reveal.show .pen { animation: none; opacity: 1; stroke-dasharray: none; }
+  .reveal.show .name { animation: none; opacity: 1; }
+}

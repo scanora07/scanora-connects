@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#fff3f1">
+  <title>Scanora Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <h1>Scanora <span>Admin</span></h1>
+      <button id="signout" class="ghost" type="button" hidden>Sign out</button>
+    </header>
+
+    <section id="v-loading" class="panel center">
+      <p class="muted">Loading…</p>
+    </section>
+
+    <section id="v-login" class="panel narrow" hidden>
+      <form id="login-form" novalidate>
+        <h2>Sign in</h2>
+        <label for="passkey">Passkey</label>
+        <input id="passkey" name="passkey" type="password" autocomplete="current-password" maxlength="200" required>
+        <p id="login-error" class="error" role="alert" hidden></p>
+        <button id="login-btn" class="primary" type="submit">Sign in</button>
+      </form>
+    </section>
+
+    <div id="v-app" hidden>
+      <section class="panel">
+        <h2>Create cards</h2>
+        <p class="muted">Enter how many cards you need. Each one gets its own unique link, ready to be filled in later, and you download a ZIP with one QR code image per card.</p>
+
+        <label for="count">How many cards</label>
+        <div class="count-row">
+          <input id="count" type="number" inputmode="numeric" min="1" step="1" value="50" aria-label="Number of cards">
+          <div id="chips" class="chips"></div>
+        </div>
+        <p id="count-hint" class="muted small"></p>
+
+        <label for="label">Label <span class="muted">(optional)</span></label>
+        <input id="label" type="text" maxlength="60" autocomplete="off" placeholder="e.g. Diwali stock, Shop A">
+
+        <p class="note">Every QR code opens <code id="qr-example"></code></p>
+
+        <p id="gen-error" class="error" role="alert" hidden></p>
+        <button id="generate" class="primary" type="button" disabled>Create and download ZIP</button>
+        <p id="gen-status" class="status" aria-live="polite" hidden></p>
+      </section>
+
+      <section class="panel">
+        <h2>Batches</h2>
+        <p class="muted">Every batch you have made. You can download its ZIP again at any time, it always contains all of its QR codes.</p>
+        <div id="batches"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Cleanup link</h2>
+        <p class="muted">Gifts are deleted <span id="gift-days">7</span> days after they are filled in. An expired gift is removed the moment someone opens it. To clear the rest too, set your scheduler (for example cron-job.org) to open this link once a day.</p>
+        <div id="cleanup-box" class="linkbox" hidden>
+          <code id="cleanup-url"></code>
+          <button id="copy-cleanup" class="ghost" type="button">Copy link</button>
+        </div>
+        <p id="cleanup-off" class="muted small" hidden>The cleanup link is switched off. Set <code>CRON_SECRET</code> (at least 16 random characters) in your settings to turn it on.</p>
+        <p class="note">The link only removes gifts that have already expired, so opening it more often than needed does no harm. Keep it private all the same.</p>
+      </section>
+    </div>
+  </main>
+  <script src="admin.js"></script>
+</body>
+</html>

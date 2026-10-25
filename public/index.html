@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#fff3f1">
+  <title>A gift for you</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <i class="orb o1"></i>
+    <i class="orb o2"></i>
+    <i class="orb o3"></i>
+    <canvas id="magic"></canvas>
+  </div>
+  <main id="app">
+
+    <!-- Loading -->
+    <section id="view-loading" class="view active" aria-live="polite">
+      <p class="muted">Loading…</p>
+    </section>
+
+    <!-- Form: card is empty -->
+    <section id="view-form" class="view">
+      <form id="gift-form" class="card" novalidate>
+        <h1 class="script">Make a gift</h1>
+        <p class="muted">Write your wish, then preview how it will look.</p>
+
+        <label>
+          <span>Their name</span>
+          <input id="f-name" name="name" type="text" maxlength="40" autocomplete="off" required placeholder="e.g. Priya">
+        </label>
+
+        <label>
+          <span>Your wish <small id="c-wish">0/60</small></span>
+          <input id="f-wish" name="wish" type="text" maxlength="60" autocomplete="off" required placeholder="e.g. Happy Birthday!">
+        </label>
+
+        <label>
+          <span>Your personal message <small id="c-message">0/800</small></span>
+          <textarea id="f-message" name="message" rows="6" maxlength="800" required placeholder="Write something from the heart…"></textarea>
+        </label>
+
+        <div class="ideas">
+          <span class="ideas-title">Need words? Tap a line to add it</span>
+          <div class="ideas-list">
+            <button type="button" class="idea">Wishing you a day filled with love, laughter and everything that makes you smile.</button>
+            <button type="button" class="idea">You make the world brighter just by being in it. Thank you for being you.</button>
+            <button type="button" class="idea">Here's to the memories we've made, and to all the beautiful ones still waiting for us.</button>
+            <button type="button" class="idea">May your days be full of joy, your heart full of peace, and every dream come true.</button>
+            <button type="button" class="idea">No matter the occasion, I'm so grateful to have you in my life.</button>
+            <button type="button" class="idea">With all my love, today and always.</button>
+          </div>
+        </div>
+
+        <p id="form-error" class="error" role="alert" hidden></p>
+        <button type="submit" class="btn">Preview gift</button>
+        <p class="fineprint">Gifts stay available for <span class="gift-days">7</span> days after this form is filled.</p>
+      </form>
+    </section>
+
+    <!-- Screen 1: heart + wish -->
+    <section id="view-heart" class="view">
+      <div class="stage">
+        <div class="heart-wrap">
+          <div class="halo"></div>
+        <svg id="heart" class="heart" viewBox="0 0 200 166" role="img" aria-label="A heart filling up">
+          <defs>
+            <clipPath id="heart-clip">
+              <path id="heart-shape" d="M100 40 C92 20 76 8 54 8 C26 8 6 28 6 56 C6 96 50 126 84 150 Q100 162 116 150 C150 126 194 96 194 56 C194 28 174 8 146 8 C124 8 108 20 100 40 Z"/>
+            </clipPath>
+            <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffffff" stop-opacity=".95"/>
+              <stop offset="1" stop-color="#ffe6ee" stop-opacity=".8"/>
+            </linearGradient>
+            <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#f0c060"/>
+              <stop offset=".5" stop-color="#ff8fb0"/>
+              <stop offset="1" stop-color="#e0316a"/>
+            </linearGradient>
+            <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ff3d6e"/>
+              <stop offset="1" stop-color="#8e0a34"/>
+            </linearGradient>
+          </defs>
+          <use href="#heart-shape" fill="url(#glass)"/>
+          <g clip-path="url(#heart-clip)">
+            <g class="level">
+              <g class="wave wave-back">
+                <path d="M0 4 Q25 -12 50 4 T100 4 T150 4 T200 4 T250 4 T300 4 T350 4 T400 4 V260 H0 Z" fill="#ffa7bf"/>
+              </g>
+              <g class="wave wave-mid">
+                <path d="M0 18 Q25 4 50 18 T100 18 T150 18 T200 18 T250 18 T300 18 T350 18 T400 18 V260 H0 Z" fill="#ff5c84"/>
+              </g>
+              <g class="wave wave-front">
+                <path d="M0 32 Q25 16 50 32 T100 32 T150 32 T200 32 T250 32 T300 32 T350 32 T400 32 V260 H0 Z" fill="url(#water)"/>
+              </g>
+              <g class="bubbles">
+                <circle class="bub" cx="64" cy="86" r="2.4"/>
+                <circle class="bub" cx="88" cy="80" r="1.6"/>
+                <circle class="bub" cx="108" cy="88" r="2.8"/>
+                <circle class="bub" cx="128" cy="78" r="1.8"/>
+                <circle class="bub" cx="146" cy="70" r="2.2"/>
+                <circle class="bub" cx="78" cy="68" r="1.4"/>
+              </g>
+            </g>
+          </g>
+          <use href="#heart-shape" fill="none" stroke="url(#rim)" stroke-width="2.8" stroke-linejoin="round"/>
+          <path class="gloss" d="M14 46 C16 30 28 18 46 15" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="56" cy="13" r="1.8" fill="#fff" fill-opacity=".85"/>
+        </svg>
+        </div>
+
+        <div id="reveal" class="reveal">
+          <p id="wish-text" class="wish" aria-live="polite"></p>
+          <p id="wish-name" class="name"></p>
+          <button id="open-btn" class="open-env" type="button" aria-label="Tap to open letter">
+            <svg class="env" viewBox="0 0 120 92" aria-hidden="true">
+              <defs>
+                <linearGradient id="env-body" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#fff6ee"/>
+                  <stop offset="1" stop-color="#ffe3e6"/>
+                </linearGradient>
+                <linearGradient id="env-flap" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#ffd2dc"/>
+                  <stop offset="1" stop-color="#ffb3c6"/>
+                </linearGradient>
+                <radialGradient id="env-wax" cx=".35" cy=".3" r=".9">
+                  <stop offset="0" stop-color="#ff6b8c"/>
+                  <stop offset=".6" stop-color="#c9184a"/>
+                  <stop offset="1" stop-color="#8e0a34"/>
+                </radialGradient>
+              </defs>
+              <rect x="4" y="10" width="112" height="78" rx="7" fill="url(#env-body)" stroke="#f2a9bb" stroke-width="1.2"/>
+              <rect class="env-paper" x="16" y="14" width="88" height="58" rx="3" fill="#fffdf8" stroke="#ecd9d0" stroke-width="1"/>
+              <path class="env-paper-lines" d="M26 30h68M26 40h68M26 50h50" stroke="#c7d3e8" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M4 17 L60 58 L116 17 V81 a7 7 0 0 1 -7 7 H11 a7 7 0 0 1 -7 -7 Z" fill="url(#env-body)" stroke="#f2a9bb" stroke-width="1.2" stroke-linejoin="round"/>
+              <g class="env-flap">
+                <path d="M4 17 a7 7 0 0 1 7 -7 H109 a7 7 0 0 1 7 7 L60 60 Z" fill="url(#env-flap)" stroke="#f2a9bb" stroke-width="1.2" stroke-linejoin="round"/>
+              </g>
+              <g class="env-seal">
+                <circle cx="60" cy="58" r="13" fill="url(#env-wax)"/>
+                <path d="M60 65c-8-6-10-11-6.5-14.2 2.4-2.1 5.5-1.4 6.5 1.4 1-2.8 4.1-3.5 6.5-1.4C70 54 68 59 60 65z" fill="none" stroke="#ffc2d1" stroke-width="1.6" stroke-linejoin="round"/>
+              </g>
+            </svg>
+            <span class="env-label">Tap to open letter</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 2: letter -->
+    <section id="view-letter" class="view">
+      <article class="letter">
+        <h2 id="letter-dear" class="script"></h2>
+        <p id="letter-body" class="script body"></p>
+        <svg class="seal" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <radialGradient id="wax" cx=".35" cy=".3" r=".9">
+              <stop offset="0" stop-color="#ff6b8c"/>
+              <stop offset=".6" stop-color="#c9184a"/>
+              <stop offset="1" stop-color="#8e0a34"/>
+            </radialGradient>
+          </defs>
+          <path d="M32 3c5 0 7 4 12 4s8 3 9 8 5 6 6 11-3 8-3 13 1 9-4 12-7 3-11 5-7 5-11 5-7-4-11-5-8-1-11-5-3-7-3-12-4-8-3-13 5-6 6-11 4-8 9-8 7-4 12-4z" fill="url(#wax)"/>
+          <path d="M32 46C18 36 14 27 20 21c4-4 10-3 12 2 2-5 8-6 12-2 6 6 2 15-12 25z" fill="none" stroke="#ffb3c4" stroke-opacity=".85" stroke-width="2"/>
+        </svg>
+      </article>
+    </section>
+
+    <!-- Shown after the sender confirms the preview -->
+    <section id="view-done" class="view">
+      <div class="card center">
+        <h1 class="script">Your gift is ready</h1>
+        <p class="muted">Hand over the card. Whoever scans it will see this gift.</p>
+        <button id="done-view" class="btn" type="button">See your gift</button>
+      </div>
+    </section>
+
+    <!-- Expired / invalid -->
+    <section id="view-expired" class="view">
+      <div class="card center">
+        <h1 id="end-title" class="script">Something went wrong</h1>
+        <p id="end-text" class="muted">Please try again in a moment.</p>
+      </div>
+    </section>
+
+    <button id="music-btn" class="music" type="button" aria-label="Mute music" hidden>
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/>
+        <g class="on"><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></g>
+        <g class="off"><path d="m16 9 5 6M21 9l-5 6"/></g>
+      </svg>
+    </button>
+    <audio id="bgm" loop preload="none"></audio>
+  </main>
+
+  <!-- Preview bar: shown over the gift while the sender is checking it before it is final -->
+  <div id="preview-bar" class="pbar" hidden>
+    <span class="pbar-tag">Preview</span>
+    <button id="pv-edit" class="pbar-edit" type="button">Edit</button>
+    <button id="pv-confirm" class="btn" type="button">Create gift</button>
+  </div>
+
+  <script src="/assets/pen-font.js"></script>
+  <script src="/magic.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
