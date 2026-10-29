@@ -34,20 +34,31 @@
           <input id="f-wish" name="wish" type="text" maxlength="80" autocomplete="off" required placeholder="e.g. Happy Birthday Ram">
         </label>
 
-        <label>
-          <span><span>Your letter <em class="opt">(optional)</em></span> <small id="c-letter">0/800</small></span>
-          <textarea id="f-letter" name="letter" rows="6" maxlength="800" placeholder="Write something from the heart, or leave this empty and we will add a heartfelt letter for you."></textarea>
-        </label>
+        <fieldset class="choice">
+          <legend>Want to write your own letter?</legend>
+          <div class="choice-row">
+            <label class="pill"><input type="radio" name="own-letter" value="no" checked><span>No, skip it</span></label>
+            <label class="pill"><input type="radio" name="own-letter" value="yes"><span>Yes, I'll write it</span></label>
+          </div>
+          <p class="hint">Without your own letter, we add a heartfelt one that suits any occasion.</p>
+        </fieldset>
 
-        <div class="ideas">
-          <span class="ideas-title">Need words? Tap a line to add it</span>
-          <div class="ideas-list">
-            <button type="button" class="idea">Wishing you a day filled with love, laughter and everything that makes you smile.</button>
-            <button type="button" class="idea">You make the world brighter just by being in it. Thank you for being you.</button>
-            <button type="button" class="idea">Here's to the memories we've made, and to all the beautiful ones still waiting for us.</button>
-            <button type="button" class="idea">May your days be full of joy, your heart full of peace, and every dream come true.</button>
-            <button type="button" class="idea">No matter the occasion, I'm so grateful to have you in my life.</button>
-            <button type="button" class="idea">With all my love, today and always.</button>
+        <div id="letter-fields" hidden>
+          <label>
+            <span>Your letter <small id="c-letter">0/800</small></span>
+            <textarea id="f-letter" name="letter" rows="6" maxlength="800" placeholder="Write something from the heart…"></textarea>
+          </label>
+
+          <div class="ideas">
+            <span class="ideas-title">Need words? Tap a line to add it</span>
+            <div class="ideas-list">
+              <button type="button" class="idea">Wishing you a day filled with love, laughter and everything that makes you smile.</button>
+              <button type="button" class="idea">You make the world brighter just by being in it. Thank you for being you.</button>
+              <button type="button" class="idea">Here's to the memories we've made, and to all the beautiful ones still waiting for us.</button>
+              <button type="button" class="idea">May your days be full of joy, your heart full of peace, and every dream come true.</button>
+              <button type="button" class="idea">No matter the occasion, I'm so grateful to have you in my life.</button>
+              <button type="button" class="idea">With all my love, today and always.</button>
+            </div>
           </div>
         </div>
 

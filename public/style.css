@@ -125,8 +125,29 @@ body {
 label { display: block; margin-bottom: 14px; }
 label > span { display: flex; justify-content: space-between; font-weight: 600; font-size: .9rem; margin-bottom: 6px; color: #6a2a45; }
 label small { font-weight: 400; color: var(--muted); }
-label .opt { font-style: normal; font-weight: 400; color: var(--muted); }
-.hint { display: block; margin-top: 4px; font-size: .78rem; color: var(--muted); }
+.card .hint { display: block; margin: 8px 0 0; font-size: .8rem; line-height: 1.4; color: var(--muted); }
+
+/* "Want to write your own letter?" as two tappable pills */
+.choice { border: 0; margin: 0 0 16px; padding: 0; min-width: 0; }
+.choice legend { padding: 0; margin-bottom: 8px; font-weight: 600; font-size: .9rem; color: #6a2a45; }
+.choice-row { display: flex; gap: 10px; }
+.choice .pill { position: relative; flex: 1; display: block; margin: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.choice .pill input { position: absolute; opacity: 0; width: 1px; height: 1px; padding: 0; margin: 0; pointer-events: none; }
+.choice .pill > span {
+  display: block;
+  margin: 0;
+  padding: 11px 10px;
+  text-align: center;
+  font-weight: 600;
+  font-size: .92rem;
+  color: #6a2a45;
+  border: 1.5px solid #f2c9d6;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .85);
+  transition: background .2s, border-color .2s, color .2s;
+}
+.choice .pill input:checked + span { background: #ffe4ec; border-color: var(--rose); color: var(--rose-deep); }
+.choice .pill input:focus-visible + span { box-shadow: 0 0 0 3px rgba(224, 49, 106, .2); }
 
 input, textarea {
   width: 100%;

@@ -416,6 +416,17 @@
     update();
   });
 
+  // The letter box (and the idea lines) only appear when the sender chooses to write their own letter
+  const letterFields = $("letter-fields");
+  form.querySelectorAll('input[name="own-letter"]').forEach((radio) => {
+    radio.addEventListener("change", () => {
+      const own = form.elements["own-letter"].value === "yes";
+      letterFields.hidden = !own;
+      errorEl.hidden = true;
+      if (own) letterEl.focus({ preventScroll: true });
+    });
+  });
+
   // Tapping an idea adds that line to the letter (after a blank line if there is already text)
   document.querySelector(".ideas-list").addEventListener("click", (e) => {
     const idea = e.target.closest(".idea");
@@ -484,10 +495,12 @@
     e.preventDefault();
     errorEl.hidden = true;
 
-    // The letter is optional: empty means null, and the gift page then shows the built-in letter
+    // Only a letter the sender chose to write is sent. Otherwise (or if the box is left empty) it is
+    // null, and the gift page then shows the built-in letter.
+    const own = form.elements["own-letter"].value === "yes";
     const data = {
       wish: $("f-wish").value.trim(),
-      letter: letterEl.value.trim() || null,
+      letter: own ? letterEl.value.trim() || null : null,
     };
 
     let problem = "";
