@@ -123,8 +123,14 @@ function createApp({ db, config, limits = {} }) {
     res.set("Cache-Control", "no-cache");
     res.sendFile(path.join(PUBLIC_DIR, "index.html"));
   });
-  // extensions: "/greet" opens greet.html
-  app.use(express.static(PUBLIC_DIR, { maxAge: config.isProd ? "1h" : 0, extensions: ["html"] }));
+  // extensions: "/greet" opens greet.html. Fonts never change under the same name, so browsers keep them for a year.
+  app.use(express.static(PUBLIC_DIR, {
+    maxAge: config.isProd ? "1h" : 0,
+    extensions: ["html"],
+    setHeaders(res, file) {
+      if (file.endsWith(".woff2")) res.set("Cache-Control", "public, max-age=31536000, immutable");
+    },
+  }));
   app.use((req, res) => res.status(404).type("text").send("Not found"));
 
   // eslint-disable-next-line no-unused-vars

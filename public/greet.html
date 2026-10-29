@@ -6,7 +6,21 @@
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#fff3f1">
   <title>A little something for you</title>
+  <link rel="preload" href="/assets/caveat-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/caveat-500.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/style.css">
+  <script>
+    // Keep the page hidden until the handwriting fonts are ready (at most 2.5 s), so the text never
+    // shows in a plain font first and then jumps.
+    (function () {
+      var root = document.documentElement;
+      root.classList.add("fonts-wait");
+      var done = function () { root.classList.remove("fonts-wait"); };
+      if (!document.fonts || !document.fonts.load) return done();
+      Promise.all([document.fonts.load("700 1em Caveat"), document.fonts.load("500 1em Caveat")]).then(done, done);
+      setTimeout(done, 2500);
+    })();
+  </script>
 </head>
 <body data-view="greet">
   <div class="bg" aria-hidden="true">

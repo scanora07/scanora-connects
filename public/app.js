@@ -509,19 +509,33 @@
     show("expired");
   }
 
+  // The handwriting fonts load while the card is being looked up. The first screen waits for them
+  // (at most 2.5 s), so the text never shows in a plain font and then jumps to the real one.
+  const fontsReady = (() => {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    const loaded = Promise.all([document.fonts.load("700 1em Caveat"), document.fonts.load("500 1em Caveat")]).catch(() => {});
+    return Promise.race([loaded, new Promise((resolve) => setTimeout(resolve, 2500))]);
+  })();
+
   (async function init() {
     if (!cardId) {
+      await fontsReady;
       showMessage("Scan your card", "Scan the QR code on your gift card to open your gift.");
       return;
     }
     try {
       const card = await api.getCard(cardId);
+      if (card.status !== "empty" && card.status !== "active") {
+        location.replace("/greet"); // expired, deleted or never issued: the link no longer works
+        return;
+      }
+      await fontsReady;
       if (card.status === "empty") {
         if (card.days) setGiftDays(card.days);
         show("form");
-      } else if (card.status === "active") showGift(card.gift);
-      else location.replace("/greet"); // expired, deleted or never issued: the link no longer works
+      } else showGift(card.gift);
     } catch {
+      await fontsReady;
       showMessage("Something went wrong", "Please try again in a moment.");
     }
   })();
