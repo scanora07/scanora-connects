@@ -30,9 +30,8 @@ CREATE TABLE IF NOT EXISTS gifts (
   slug       TEXT        NOT NULL UNIQUE,
   batch_id   INTEGER     NOT NULL REFERENCES batches(id),
   status     TEXT        NOT NULL DEFAULT 'empty' CHECK (status IN ('empty', 'active')),
-  name       TEXT,
   wish       TEXT,
-  message    TEXT,
+  letter     TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   filled_at  TIMESTAMPTZ,
   expires_at TIMESTAMPTZ
@@ -53,6 +52,22 @@ UPDATE batches b
    SET slugs = (SELECT array_agg(g.slug ORDER BY g.id) FROM gifts g WHERE g.batch_id = b.id)
  WHERE cardinality(b.slugs) = 0
    AND EXISTS (SELECT 1 FROM gifts g WHERE g.batch_id = b.id);
+
+-- A gift is now just a wish plus an optional letter (NULL letter = the page shows its built-in letter).
+-- Gifts made with the older layout keep their text: the name is folded into the wish, and the
+-- message becomes the letter.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema = current_schema() AND table_name = 'gifts' AND column_name = 'name') THEN
+    UPDATE gifts SET wish = btrim(coalesce(wish, '') || ' ' || name) WHERE name IS NOT NULL AND status = 'active';
+    ALTER TABLE gifts DROP COLUMN name;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema = current_schema() AND table_name = 'gifts' AND column_name = 'message') THEN
+    ALTER TABLE gifts RENAME COLUMN message TO letter;
+  END IF;
+END $$;
 
 -- "expired" is no longer a state: expired rows are deleted
 DO $$

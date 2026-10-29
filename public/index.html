@@ -29,18 +29,13 @@
         <p class="muted">Write your wish, then preview how it will look.</p>
 
         <label>
-          <span>Their name</span>
-          <input id="f-name" name="name" type="text" maxlength="40" autocomplete="off" required placeholder="e.g. Priya">
+          <span>Your wish <small id="c-wish">0/80</small></span>
+          <input id="f-wish" name="wish" type="text" maxlength="80" autocomplete="off" required placeholder="e.g. Happy Birthday Ram">
         </label>
 
         <label>
-          <span>Your wish <small id="c-wish">0/60</small></span>
-          <input id="f-wish" name="wish" type="text" maxlength="60" autocomplete="off" required placeholder="e.g. Happy Birthday!">
-        </label>
-
-        <label>
-          <span>Your personal message <small id="c-message">0/800</small></span>
-          <textarea id="f-message" name="message" rows="6" maxlength="800" required placeholder="Write something from the heart…"></textarea>
+          <span><span>Your letter <em class="opt">(optional)</em></span> <small id="c-letter">0/800</small></span>
+          <textarea id="f-letter" name="letter" rows="6" maxlength="800" placeholder="Write something from the heart, or leave this empty and we will add a heartfelt letter for you."></textarea>
         </label>
 
         <div class="ideas">
@@ -115,7 +110,6 @@
 
         <div id="reveal" class="reveal">
           <p id="wish-text" class="wish" aria-live="polite"></p>
-          <p id="wish-name" class="name"></p>
           <button id="open-btn" class="open-env" type="button" aria-label="Tap to open letter">
             <svg class="env" viewBox="0 0 120 92" aria-hidden="true">
               <defs>

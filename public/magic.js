@@ -26,7 +26,7 @@
   ];
 
   // ---- The content to steer around ----
-  // The real footprint of what is on screen (heart, wish, name, button, form card or letter),
+  // The real footprint of what is on screen (heart, wish, button, form card or letter),
   // not the full-width block around it, so butterflies can use every gap beside and between.
   let rects = [];
   const SAFE_PAD = 6;
@@ -50,7 +50,6 @@
     if (view && view.id === "view-heart") {
       add(view.querySelector("#heart").getBoundingClientRect());
       add(textBox(view.querySelector("#wish-text")));
-      add(textBox(view.querySelector("#wish-name")));
       add(view.querySelector("#open-btn").getBoundingClientRect());
     } else if (view && view.id !== "view-loading") {
       add(view.firstElementChild && view.firstElementChild.getBoundingClientRect());

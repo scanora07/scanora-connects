@@ -8,7 +8,7 @@ const { rateLimit } = require("./ratelimit");
 // Anything else cannot be a real card, so it is refused without touching the database.
 const SLUG = /^[a-hj-km-np-z2-9]{10}$/;
 
-const MAX = { name: 40, wish: 60, message: 800 };
+const MAX = { wish: 80, letter: 800 };
 const LINK = /https?:\/\/|www\./i;
 // Invisible characters that can be used to disguise text (direction overrides, joiners other than emoji ones, BOM)
 const INVISIBLE = /[\u200B\u200C\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
@@ -30,18 +30,24 @@ function clean(value, multiline) {
 const length = (s) => [...s].length; // counts characters (an emoji is one), like a person would
 
 // Checks what the sender typed. Returns { gift } when fine, or { error } with a message for them.
+// The wish is required. The letter is optional: when it is empty it is stored as null, and the
+// gift page then shows its built-in letter instead.
 function validateGift(body) {
   const b = body && typeof body === "object" ? body : {};
-  const name = clean(b.name, false);
   const wish = clean(b.wish, false);
-  const message = clean(b.message, true);
-  if (name === null || wish === null || message === null) return { error: "Please fill in the name, wish and message." };
-  if (!name || !wish || !message) return { error: "Please fill in the name, wish and message." };
-  if (length(name) > MAX.name) return { error: "The name is too long (at most " + MAX.name + " characters)." };
+  if (wish === null || !wish) return { error: "Please write your wish." };
   if (length(wish) > MAX.wish) return { error: "The wish is too long (at most " + MAX.wish + " characters)." };
-  if (length(message) > MAX.message) return { error: "The message is too long (at most " + MAX.message + " characters)." };
-  if (LINK.test(name + " " + wish + " " + message)) return { error: "Links are not allowed." };
-  return { gift: { name, wish, message } };
+
+  let letter = null;
+  if (b.letter !== undefined && b.letter !== null) {
+    const cleaned = clean(b.letter, true);
+    if (cleaned === null) return { error: "The letter must be text." };
+    if (length(cleaned) > MAX.letter) return { error: "The letter is too long (at most " + MAX.letter + " characters)." };
+    letter = cleaned || null;
+  }
+
+  if (LINK.test(wish + " " + (letter || ""))) return { error: "Links are not allowed." };
+  return { gift: { wish, letter } };
 }
 
 function createGiftRouter(db, { giftDays, limits = {} }) {
@@ -59,7 +65,7 @@ function createGiftRouter(db, { giftDays, limits = {} }) {
     if (!SLUG.test(slug)) return res.status(404).json({ status: "gone" });
 
     const { rows } = await db.query(
-      "SELECT status, name, wish, message, (expires_at <= now()) AS lapsed FROM gifts WHERE slug = $1",
+      "SELECT status, wish, letter, (expires_at <= now()) AS lapsed FROM gifts WHERE slug = $1",
       [slug]
     );
     if (!rows.length) return res.status(404).json({ status: "gone" });
@@ -67,7 +73,7 @@ function createGiftRouter(db, { giftDays, limits = {} }) {
 
     if (g.status === "empty") return res.json({ status: "empty", days: giftDays });
 
-    if (!g.lapsed) return res.json({ status: "active", gift: { name: g.name, wish: g.wish, message: g.message } });
+    if (!g.lapsed) return res.json({ status: "active", gift: { wish: g.wish, letter: g.letter } });
 
     // The time is up: delete the whole row right now, so nothing personal is kept
     await db.query("DELETE FROM gifts WHERE slug = $1 AND status = 'active' AND expires_at <= now()", [slug]);
@@ -81,16 +87,16 @@ function createGiftRouter(db, { giftDays, limits = {} }) {
 
     const checked = validateGift(req.body);
     if (checked.error) return res.status(400).json({ error: checked.error });
-    const { name, wish, message } = checked.gift;
+    const { wish, letter } = checked.gift;
 
     // One atomic statement: if two people submit at the same moment, exactly one of them wins
     const { rows } = await db.query(
       `UPDATE gifts
-          SET status = 'active', name = $2, wish = $3, message = $4,
-              filled_at = now(), expires_at = now() + make_interval(days => $5::int)
+          SET status = 'active', wish = $2, letter = $3,
+              filled_at = now(), expires_at = now() + make_interval(days => $4::int)
         WHERE slug = $1 AND status = 'empty'
         RETURNING id`,
-      [slug, name, wish, message, giftDays]
+      [slug, wish, letter, giftDays]
     );
     if (rows.length) return res.json({ ok: true });
 

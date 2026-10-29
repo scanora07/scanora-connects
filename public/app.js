@@ -238,16 +238,11 @@
     return len;
   }
 
-  // opts: { scale, outline, tight }
-  //   scale   draws the text larger than the wish (wrapping adjusts so it still fits)
-  //   outline adds a thick rose stroke under a thinner white one: a rose border with a white inside
-  //   tight   sizes the drawing to the text instead of to a full-width line
-  function drawWish(el, rawText, startAt, opts = {}) {
+  function drawWish(el, rawText, startAt) {
     const font = window.PEN_FONT;
     const text = normalizeForPen(rawText);
     if (!font || !text || [...text].some((c) => c !== " " && !font[c])) return null;
-    const scale = opts.scale || 1;
-    const wrapWidth = PEN.width / scale;
+    const wrapWidth = PEN.width;
 
     // Lay words out into lines no wider than the wrap width
     const words = text.split(" ").map((w) => ({
@@ -266,7 +261,7 @@
       }
     });
     const widest = Math.max(...lines.map((l) => l.width));
-    const vbWidth = opts.tight ? widest : Math.max(wrapWidth, widest);
+    const vbWidth = Math.max(wrapWidth, widest);
 
     // Collect every stroke with its position and length
     const strokes = [];
@@ -292,11 +287,6 @@
     svg.setAttribute("viewBox", `-4 -2 ${vbWidth + 8} ${lines.length * PEN.lineHeight + 4}`);
     svg.setAttribute("role", "img");
     svg.setAttribute("aria-label", rawText);
-    if (opts.scale || opts.tight) {
-      // Same size per unit as the wish, multiplied by the scale (the name is a little larger)
-      const ratio = ((vbWidth + 8) / (PEN.width + 8)) * scale;
-      svg.style.setProperty("--r", ratio.toFixed(3));
-    }
 
     // When and for how long each stroke is drawn
     let t = startAt;
@@ -307,20 +297,16 @@
       return { at, dur };
     });
 
-    // Borders first, then the white insides on top, so the insides of overlapping strokes
-    // are never cut across by a neighbouring stroke's border
-    const layers = opts.outline ? ["pen pen-border", "pen pen-fill"] : ["pen"];
-    layers.forEach((cls) => {
-      strokes.forEach((k, i) => {
-        const path = document.createElementNS(SVG_NS, "path");
-        path.setAttribute("class", cls);
-        path.setAttribute("d", k.d);
-        path.setAttribute("transform", `translate(${k.x.toFixed(1)},${k.y})`);
-        path.style.setProperty("--len", k.len.toFixed(1));
-        path.style.setProperty("--dur", timing[i].dur.toFixed(3) + "s");
-        path.style.setProperty("--delay", timing[i].at.toFixed(3) + "s");
-        svg.appendChild(path);
-      });
+    // Each stroke is drawn on its own, one after another
+    strokes.forEach((k, i) => {
+      const path = document.createElementNS(SVG_NS, "path");
+      path.setAttribute("class", "pen");
+      path.setAttribute("d", k.d);
+      path.setAttribute("transform", `translate(${k.x.toFixed(1)},${k.y})`);
+      path.style.setProperty("--len", k.len.toFixed(1));
+      path.style.setProperty("--dur", timing[i].dur.toFixed(3) + "s");
+      path.style.setProperty("--delay", timing[i].at.toFixed(3) + "s");
+      svg.appendChild(path);
     });
 
     el.textContent = "";
@@ -374,15 +360,23 @@
     reveal.classList.add("show");
   }
 
+  // Shown whenever the sender leaves the letter empty. It is written to suit every bond and every occasion.
+  const DEFAULT_LETTER =
+    "Some moments are too special for just a few words, so I wanted to give you something to remember this one by.\n\n" +
+    "Thank you for being part of my life. For every memory we have made, every smile you have given me and every time you were simply there. You mean more to me than I can ever say.\n\n" +
+    "Whatever today brings, I hope it is filled with happiness, warmth and the people who love you. May every wish you carry in your heart find its way to you.\n\n" +
+    "With love and warm wishes, always.";
+
   $("open-btn").addEventListener("click", () => {
     const btn = $("open-btn");
     if (btn.classList.contains("opening")) return;
     opening = true;
     startMusic();
-    $("letter-dear").textContent = "Dear " + currentGift.name + ",";
-    $("letter-body").textContent = currentGift.message;
-    // Longer messages get a slightly tighter line grid so the paper stays a comfortable length
-    const weight = currentGift.message.length + (currentGift.message.match(/\n/g) || []).length * 24;
+    const letter = currentGift.letter || DEFAULT_LETTER;
+    $("letter-dear").textContent = currentGift.wish;
+    $("letter-body").textContent = letter;
+    // Longer letters get a slightly tighter line grid so the paper stays a comfortable length
+    const weight = letter.length + (letter.match(/\n/g) || []).length * 24;
     document.querySelector(".letter").dataset.size = weight > 520 ? "s" : weight > 260 ? "m" : "l";
     // Break the seal, open the flap, slide the letter out, then show it
     btn.classList.add("opening");
@@ -403,54 +397,41 @@
     let wishEnd = drawWish($("wish-text"), gift.wish, 0.3);
     if (wishEnd === null) wishEnd = writeText($("wish-text"), gift.wish, 0.3, 0.12);
 
-    // The name is drawn with the same pen, as a rose outline with a white inside
-    const nameEl = $("wish-name");
-    const nameStart = wishEnd + 0.15;
-    let nameEnd = drawWish(nameEl, gift.name, nameStart, { scale: 1.12, outline: true, tight: true });
-    if (nameEnd === null) {
-      // Characters the pen font lacks: outlined cursive text instead
-      nameEl.classList.remove("pen-name");
-      nameEl.textContent = gift.name;
-      const longest = Math.max(...gift.name.split(/\s+/).map((s) => s.length));
-      nameEl.dataset.size = longest <= 8 ? "s" : longest <= 11 ? "m" : "l";
-      nameEnd = nameStart + 0.7;
-    } else {
-      nameEl.classList.add("pen-name");
-    }
-    reveal.style.setProperty("--name-delay", nameStart.toFixed(2) + "s");
-    reveal.style.setProperty("--btn-delay", (nameEnd + 0.3).toFixed(2) + "s");
+    // The envelope appears once the wish has been written
+    reveal.style.setProperty("--btn-delay", (wishEnd + 0.3).toFixed(2) + "s");
     playHeart();
   }
 
   // ---- Form ----
   const form = $("gift-form");
   const errorEl = $("form-error");
-  const messageEl = $("f-message");
-  const MESSAGE_MAX = 800;
+  const letterEl = $("f-letter");
+  const WISH_MAX = 80;
+  const LETTER_MAX = 800;
 
-  [["f-wish", "c-wish", 60], ["f-message", "c-message", MESSAGE_MAX]].forEach(([inputId, counterId, max]) => {
+  [["f-wish", "c-wish", WISH_MAX], ["f-letter", "c-letter", LETTER_MAX]].forEach(([inputId, counterId, max]) => {
     const el = $(inputId);
     const update = () => { $(counterId).textContent = el.value.length + "/" + max; };
     el.addEventListener("input", update);
     update();
   });
 
-  // Tapping an idea adds that line to the message (after a blank line if there is already text)
+  // Tapping an idea adds that line to the letter (after a blank line if there is already text)
   document.querySelector(".ideas-list").addEventListener("click", (e) => {
     const idea = e.target.closest(".idea");
     if (!idea) return;
     errorEl.hidden = true;
     const line = idea.textContent.trim();
-    const current = messageEl.value.trimEnd();
+    const current = letterEl.value.trimEnd();
     const next = current ? current + "\n\n" + line : line;
-    if (next.length > MESSAGE_MAX) {
-      errorEl.textContent = "That line would take the message over " + MESSAGE_MAX + " characters.";
+    if (next.length > LETTER_MAX) {
+      errorEl.textContent = "That line would take the letter over " + LETTER_MAX + " characters.";
       errorEl.hidden = false;
       return;
     }
-    messageEl.value = next;
-    messageEl.dispatchEvent(new Event("input"));
-    messageEl.scrollTop = messageEl.scrollHeight;
+    letterEl.value = next;
+    letterEl.dispatchEvent(new Event("input"));
+    letterEl.scrollTop = letterEl.scrollHeight;
     idea.classList.add("added");
     setTimeout(() => idea.classList.remove("added"), 900);
   });
@@ -503,15 +484,15 @@
     e.preventDefault();
     errorEl.hidden = true;
 
+    // The letter is optional: empty means null, and the gift page then shows the built-in letter
     const data = {
-      name: $("f-name").value.trim(),
       wish: $("f-wish").value.trim(),
-      message: messageEl.value.trim(),
+      letter: letterEl.value.trim() || null,
     };
 
     let problem = "";
-    if (!data.name || !data.wish || !data.message) problem = "Please fill in the name, wish and message.";
-    else if (/https?:\/\/|www\./i.test(data.wish + " " + data.message + " " + data.name)) problem = "Links are not allowed.";
+    if (!data.wish) problem = "Please write your wish.";
+    else if (/https?:\/\/|www\./i.test(data.wish + " " + (data.letter || ""))) problem = "Links are not allowed.";
 
     if (problem) {
       errorEl.textContent = problem;
