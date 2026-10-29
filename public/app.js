@@ -406,15 +406,16 @@
   const form = $("gift-form");
   const errorEl = $("form-error");
   const letterEl = $("f-letter");
-  const WISH_MAX = 80;
   const LETTER_MAX = 800;
 
-  [["f-wish", "c-wish", WISH_MAX], ["f-letter", "c-letter", LETTER_MAX]].forEach(([inputId, counterId, max]) => {
-    const el = $(inputId);
-    const update = () => { $(counterId).textContent = el.value.length + "/" + max; };
-    el.addEventListener("input", update);
-    update();
-  });
+  // The letter length only shows once the sender is close to the limit, so the form stays plain
+  const countEl = $("c-letter");
+  const updateCount = () => {
+    const n = letterEl.value.length;
+    countEl.hidden = n < LETTER_MAX - 150;
+    countEl.textContent = n + "/" + LETTER_MAX;
+  };
+  letterEl.addEventListener("input", updateCount);
 
   // The letter box (and the idea lines) only appear when the sender chooses to write their own letter
   const letterFields = $("letter-fields");

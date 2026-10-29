@@ -27,36 +27,30 @@
     <section id="view-form" class="view">
       <form id="gift-form" class="card" novalidate>
         <h1 class="script">Make a gift</h1>
-        <p class="muted">Write your wish, then preview how it will look.</p>
 
         <label>
-          <span>Your wish <small id="c-wish">0/80</small></span>
+          <span>Your wish</span>
           <input id="f-wish" name="wish" type="text" maxlength="80" autocomplete="off" required placeholder="e.g. Happy Birthday Ram">
         </label>
 
         <fieldset class="choice">
-          <legend>Want to write your own letter?</legend>
+          <legend>Write your own letter?</legend>
           <div class="choice-row">
-            <label class="pill"><input type="radio" name="own-letter" value="no" checked><span>No, skip it</span></label>
-            <label class="pill"><input type="radio" name="own-letter" value="yes"><span>Yes, I'll write it</span></label>
+            <label class="pill"><input type="radio" name="own-letter" value="no" checked><span>No, use a ready one</span></label>
+            <label class="pill"><input type="radio" name="own-letter" value="yes"><span>Yes, write mine</span></label>
           </div>
-          <p class="hint">Without your own letter, we add a heartfelt one that suits any occasion.</p>
         </fieldset>
 
         <div id="letter-fields" hidden>
-          <label>
-            <span>Your letter <small id="c-letter">0/800</small></span>
-            <textarea id="f-letter" name="letter" rows="6" maxlength="800" placeholder="Write something from the heart…"></textarea>
-          </label>
+          <textarea id="f-letter" name="letter" rows="5" maxlength="800" aria-label="Your letter" placeholder="Your letter…"></textarea>
+          <small id="c-letter" class="count" hidden></small>
 
           <div class="ideas">
-            <span class="ideas-title">Need words? Tap a line to add it</span>
+            <span class="ideas-title">Tap to add</span>
             <div class="ideas-list">
               <button type="button" class="idea">Wishing you a day filled with love, laughter and everything that makes you smile.</button>
               <button type="button" class="idea">You make the world brighter just by being in it. Thank you for being you.</button>
-              <button type="button" class="idea">Here's to the memories we've made, and to all the beautiful ones still waiting for us.</button>
               <button type="button" class="idea">May your days be full of joy, your heart full of peace, and every dream come true.</button>
-              <button type="button" class="idea">No matter the occasion, I'm so grateful to have you in my life.</button>
               <button type="button" class="idea">With all my love, today and always.</button>
             </div>
           </div>
