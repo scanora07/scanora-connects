@@ -32,30 +32,51 @@
 
     <div id="v-app" hidden>
       <section class="panel">
-        <h2>Create cards</h2>
-        <p class="muted">Enter how many cards you need. Each one gets its own unique link, ready to be filled in later, and you download a ZIP with one QR code image per card.</p>
-
-        <label for="count">How many cards</label>
-        <div class="count-row">
-          <input id="count" type="number" inputmode="numeric" min="1" step="1" value="50" aria-label="Number of cards">
-          <div id="chips" class="chips"></div>
+        <h2>Silver sheet</h2>
+        <div class="product">
+          <img class="card-img" data-src="/api/admin/preview/silver.svg" alt="Silver card" width="230" height="230">
+          <div>
+            <p class="muted">Every silver card has the same QR code. It opens the gift page on the homepage:</p>
+            <p><code id="silver-url"></code></p>
+            <p class="muted small">One sheet of <span class="per-sheet">40</span> cards. Give the file to the shop and they print as many copies as they need. Nothing is saved when you download it.</p>
+            <button id="silver-dl" class="primary" type="button">Download silver sheet (PDF)</button>
+            <p id="silver-error" class="error" role="alert" hidden></p>
+          </div>
         </div>
-        <p id="count-hint" class="muted small"></p>
-
-        <label for="label">Label <span class="muted">(optional)</span></label>
-        <input id="label" type="text" maxlength="60" autocomplete="off" placeholder="e.g. Diwali stock, Shop A">
-
-        <p class="note">Every QR code opens <code id="qr-example"></code></p>
-
-        <p id="gen-error" class="error" role="alert" hidden></p>
-        <button id="generate" class="primary" type="button" disabled>Create and download ZIP</button>
-        <p id="gen-status" class="status" aria-live="polite" hidden></p>
       </section>
 
       <section class="panel">
-        <h2>Batches</h2>
-        <p class="muted">Every batch you have made. You can download its ZIP again at any time, it always contains all of its QR codes.</p>
-        <div id="batches"></div>
+        <h2>Gold sheets</h2>
+        <div class="product">
+          <img class="card-img" data-src="/api/admin/preview/gold.svg" alt="Gold card" width="230" height="230">
+          <div>
+            <p class="muted">Every gold card has its own QR code, so each one opens a personal gift page that the sender fills in. Each sheet holds <span class="per-sheet">40</span> cards.</p>
+
+            <label for="sheets">How many sheets</label>
+            <div class="count-row">
+              <input id="sheets" type="number" inputmode="numeric" min="1" step="1" value="1" aria-label="Number of gold sheets">
+              <div id="chips" class="chips"></div>
+            </div>
+            <p id="sheets-hint" class="muted small"></p>
+
+            <button id="gold-dl" class="primary" type="button" disabled>Create and download gold sheets (PDF)</button>
+            <p id="gold-error" class="error" role="alert" hidden></p>
+            <p id="gold-status" class="status" aria-live="polite" hidden></p>
+            <p class="note">Every press creates brand-new cards, and the file cannot be downloaded again. Save it safely and send it to the shop.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>For the print shop</h2>
+        <ul class="specs">
+          <li>Paper: 13 × 19 inch sheet. Print on one side only.</li>
+          <li>Print at <b>Actual size / 100%</b>. Do not choose "fit to page" or "shrink to fit".</li>
+          <li>Each sheet has 5 cards across and 8 down. Every card is 2.25 × 2.25 inch after cutting.</li>
+          <li>Cut along the small tick marks at the sheet edges. The black artwork reaches past the cut on purpose, so a slightly off cut shows no white edge.</li>
+          <li>The QR code is pure black on a white plate. Please do not scale, recolour or add a coating over the plate that makes it glossy.</li>
+          <li>Before a big run, print one sheet and scan a few cards with different phones.</li>
+        </ul>
       </section>
 
       <section class="panel">

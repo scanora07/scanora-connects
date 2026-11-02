@@ -12,23 +12,11 @@
 const path = require("path");
 
 const SCHEMA = `
--- One row per batch you create. "slugs" is the list of links that batch issued, in order. It is kept
--- on purpose: gift rows are deleted when they expire, but a batch's ZIP of QR codes must still be
--- re-downloadable, exactly as it was, at any time.
-CREATE TABLE IF NOT EXISTS batches (
-  id          SERIAL PRIMARY KEY,
-  label       TEXT,
-  count       INTEGER     NOT NULL,
-  slugs       TEXT[]      NOT NULL DEFAULT '{}',
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- One row per live gift card. A card starts "empty" (the QR is printed, nobody has filled it in),
--- becomes "active" when the sender fills it, and the whole row is DELETED when it expires.
+-- One row per gift card, and nothing else is stored. A card starts "empty" (the QR is printed, nobody
+-- has filled it in), becomes "active" when the sender fills it, and the whole row is DELETED when it expires.
 CREATE TABLE IF NOT EXISTS gifts (
   id         BIGSERIAL PRIMARY KEY,
   slug       TEXT        NOT NULL UNIQUE,
-  batch_id   INTEGER     NOT NULL REFERENCES batches(id),
   status     TEXT        NOT NULL DEFAULT 'empty' CHECK (status IN ('empty', 'active')),
   wish       TEXT,
   letter     TEXT,
@@ -37,21 +25,16 @@ CREATE TABLE IF NOT EXISTS gifts (
   expires_at TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS gifts_batch_idx ON gifts (batch_id, id);
 CREATE INDEX IF NOT EXISTS gifts_expiry_idx ON gifts (expires_at) WHERE status = 'active';
 `;
 
 // Brings a database made by an earlier version up to date. Every step is safe to run again.
 const MIGRATIONS = `
-ALTER TABLE batches DROP COLUMN IF EXISTS template_id;
-ALTER TABLE batches ADD COLUMN IF NOT EXISTS slugs TEXT[] NOT NULL DEFAULT '{}';
+-- Batches are gone: the sheets are printed straight from the admin page and nothing about them is kept.
+-- Dropping the column also drops its foreign key and index.
+ALTER TABLE gifts DROP COLUMN IF EXISTS batch_id;
+DROP TABLE IF EXISTS batches;
 ALTER TABLE gifts DROP COLUMN IF EXISTS opened_at;
-
--- Batches made before the list was stored: rebuild it from the cards that still exist
-UPDATE batches b
-   SET slugs = (SELECT array_agg(g.slug ORDER BY g.id) FROM gifts g WHERE g.batch_id = b.id)
- WHERE cardinality(b.slugs) = 0
-   AND EXISTS (SELECT 1 FROM gifts g WHERE g.batch_id = b.id);
 
 -- A gift is now just a wish plus an optional letter (NULL letter = the page shows its built-in letter).
 -- Gifts made with the older layout keep their text: the name is folded into the wish, and the

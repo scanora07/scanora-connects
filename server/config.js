@@ -52,7 +52,7 @@ if (!baseUrl) {
 }
 if (isProd && !/^https:\/\//i.test(baseUrl)) fail("PUBLIC_BASE_URL must start with https:// in production.");
 
-const maxBatch = Math.max(1, Math.min(5000, Number(process.env.MAX_BATCH) || 1000));
+const maxSheets = Math.max(1, Math.min(100, Number(process.env.MAX_SHEETS) || 25));
 
 module.exports = {
   isProd,
@@ -61,7 +61,7 @@ module.exports = {
   sessionSecret,
   databaseUrl,
   baseUrl,
-  maxBatch,
+  maxSheets,
   giftDays,
   cronSecret,
   dataDir: path.join(__dirname, "..", ".data"),

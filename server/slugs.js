@@ -12,51 +12,29 @@ function makeSlug() {
   return s;
 }
 
-// Creates a batch and exactly `count` brand-new empty gift cards, all or nothing.
-// The batch also remembers its links (in order), so its ZIP can be downloaded again later
-// even after some of its gift rows have expired and been deleted.
-// Returns { batch, slugs }.
-async function createBatch(db, { count, label }) {
+// Creates exactly `count` brand-new empty gift cards, all or nothing, and returns their links in order.
+// Nothing else is stored: no batch, no record of which sheet a card was printed on.
+async function createCards(db, count) {
   return db.tx(async (q) => {
-    const { rows } = await q(
-      "INSERT INTO batches (label, count) VALUES ($1, $2) RETURNING id, label, count, created_at",
-      [label || null, count]
-    );
-    const batch = rows[0];
-
-    let created = 0;
-    for (let round = 0; created < count; round++) {
+    const made = [];
+    for (let round = 0; made.length < count; round++) {
       if (round > 12) throw new Error("Could not generate enough unique links, please try again.");
       const wanted = new Set();
-      while (wanted.size < count - created) wanted.add(makeSlug());
+      while (wanted.size < count - made.length) wanted.add(makeSlug());
       // A slug that already exists is skipped by the unique constraint, and the next round tops up
       const res = await q(
-        "INSERT INTO gifts (slug, batch_id) SELECT s, $2 FROM unnest($1::text[]) AS s ON CONFLICT (slug) DO NOTHING RETURNING id",
-        [[...wanted], batch.id]
+        "INSERT INTO gifts (slug) SELECT s FROM unnest($1::text[]) AS s ON CONFLICT (slug) DO NOTHING RETURNING slug",
+        [[...wanted]]
       );
-      created += res.rows.length;
+      for (const row of res.rows) made.push(row.slug);
     }
-
-    const slugs = (await q("SELECT slug FROM gifts WHERE batch_id = $1 ORDER BY id", [batch.id])).rows.map((r) => r.slug);
-    await q("UPDATE batches SET slugs = $2::text[] WHERE id = $1", [batch.id, slugs]);
-    return { batch, slugs };
+    return made;
   });
 }
 
-async function listBatches(db, limit = 200) {
-  const { rows } = await db.query(
-    "SELECT id, label, count, created_at FROM batches ORDER BY id DESC LIMIT $1",
-    [limit]
-  );
-  return rows;
+// Removes cards that were created but never made it onto a sheet (the PDF failed or the admin left)
+async function discardCards(db, slugs) {
+  await db.query("DELETE FROM gifts WHERE slug = ANY($1::text[]) AND status = 'empty'", [slugs]);
 }
 
-// The batch and the exact links it issued, taken from the batch itself (not from the gift rows)
-async function getBatch(db, id) {
-  const { rows } = await db.query("SELECT id, label, count, slugs, created_at FROM batches WHERE id = $1", [id]);
-  if (!rows.length) return null;
-  const { slugs, ...batch } = rows[0];
-  return { batch, slugs };
-}
-
-module.exports = { createBatch, listBatches, getBatch };
+module.exports = { makeSlug, createCards, discardCards };

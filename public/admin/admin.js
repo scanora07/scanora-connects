@@ -4,10 +4,8 @@
   const $ = (id) => document.getElementById(id);
   const views = { loading: $("v-loading"), login: $("v-login"), app: $("v-app") };
 
-  let settings = { maxBatch: 1000, baseUrl: "", exampleUrl: "", giftDays: 7, cleanupUrl: null };
+  let settings = { maxSheets: 25, perSheet: 40, silverUrl: "", giftDays: 7, cleanupUrl: null };
   let busy = false;
-
-  const when = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
   function show(name) {
     for (const [key, el] of Object.entries(views)) el.hidden = key !== name;
@@ -37,175 +35,108 @@
     return data;
   }
 
-  function setStatus(text, kind) {
-    const el = $("gen-status");
-    el.hidden = !text;
-    el.textContent = text || "";
-    el.className = "status" + (kind ? " " + kind : "");
+  // Asks for a PDF and saves it; throws the server's own message when something goes wrong
+  async function downloadPdf(path, options, fallbackName) {
+    const res = await request(path, options);
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error((data && data.error) || "Could not create the file.");
+    }
+    const blob = await res.blob();
+    const m = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = m ? m[1] : fallbackName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    return { name: a.download, size: blob.size };
   }
 
-  // ---------------- Count ----------------
-  function countValue() {
-    const raw = $("count").value.trim();
+  const megabytes = (n) => (n / 1048576).toFixed(1) + " MB";
+
+  // ---------------- Silver ----------------
+  $("silver-dl").addEventListener("click", async () => {
+    const btn = $("silver-dl");
+    const original = btn.textContent;
+    $("silver-error").hidden = true;
+    btn.disabled = true;
+    btn.textContent = "Preparing…";
+    try {
+      await downloadPdf("/sheets/silver", {}, "silver-sheet.pdf");
+    } catch (err) {
+      if (!(err instanceof SignedOut)) {
+        $("silver-error").textContent = err.message;
+        $("silver-error").hidden = false;
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
+  // ---------------- Gold ----------------
+  function sheetsValue() {
+    const raw = $("sheets").value.trim();
     return /^\d+$/.test(raw) ? Number(raw) : NaN;
   }
 
   function validate() {
-    const n = countValue();
-    const good = Number.isInteger(n) && n >= 1 && n <= settings.maxBatch;
-    $("count-hint").textContent = good
-      ? n + " card" + (n === 1 ? "" : "s") + " = " + n + " QR code image" + (n === 1 ? "" : "s") + " in the ZIP."
-      : "Enter a whole number from 1 to " + settings.maxBatch + ".";
-    $("generate").disabled = busy || !good;
+    const n = sheetsValue();
+    const good = Number.isInteger(n) && n >= 1 && n <= settings.maxSheets;
+    $("sheets-hint").textContent = good
+      ? n + " sheet" + (n === 1 ? "" : "s") + " = " + (n * settings.perSheet).toLocaleString("en-IN") + " cards, each with its own QR code."
+      : "Enter a whole number from 1 to " + settings.maxSheets + ".";
+    $("gold-dl").disabled = busy || !good;
   }
 
   function renderChips() {
     const box = $("chips");
     box.textContent = "";
-    for (const n of [10, 50, 100, 250, 500, 1000]) {
-      if (n > settings.maxBatch) continue;
+    for (const n of [1, 2, 5, 10, 25]) {
+      if (n > settings.maxSheets) continue;
       const b = document.createElement("button");
       b.type = "button";
       b.className = "chip";
       b.textContent = n;
-      b.addEventListener("click", () => { $("count").value = n; validate(); });
+      b.addEventListener("click", () => { $("sheets").value = n; validate(); });
       box.appendChild(b);
     }
   }
 
-  // ---------------- Downloading ----------------
-  function saveBlob(blob, fileName) {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  function setStatus(text, kind) {
+    const el = $("gold-status");
+    el.hidden = !text;
+    el.textContent = text || "";
+    el.className = "status" + (kind ? " " + kind : "");
   }
 
-  function fileNameFrom(res, fallback) {
-    const m = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "");
-    return m ? m[1] : fallback;
-  }
-
-  async function generate() {
-    const count = countValue();
-    $("gen-error").hidden = true;
-    setStatus("");
-    if (!Number.isInteger(count)) return;
-
+  $("gold-dl").addEventListener("click", async () => {
+    const sheets = sheetsValue();
+    if (!Number.isInteger(sheets)) return;
+    $("gold-error").hidden = true;
     busy = true;
     validate();
-    $("generate").textContent = "Creating…";
-    setStatus("Creating " + count + " card" + (count === 1 ? "" : "s") + " and building the ZIP. This can take a little while for big batches.");
-
-    let batchId = "";
+    const btn = $("gold-dl");
+    const original = btn.textContent;
+    btn.textContent = "Creating…";
+    setStatus("Creating " + sheets + " sheet" + (sheets === 1 ? "" : "s") + " (" + (sheets * settings.perSheet) + " cards). Larger jobs take a little while.");
     try {
-      const res = await request("/batches", {
-        method: "POST",
-        body: JSON.stringify({ count, label: $("label").value.trim() }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error((data && data.error) || "Could not create the cards.");
-      }
-      batchId = res.headers.get("X-Batch-Id") || "";
-      const blob = await res.blob();
-      saveBlob(blob, fileNameFrom(res, "qr-batch-" + batchId + ".zip"));
-      setStatus("Done. " + count + " cards were created (batch #" + batchId + ") and the ZIP has been downloaded. You can download it again from the list below.", "good");
+      const file = await downloadPdf("/sheets/gold", { method: "POST", body: JSON.stringify({ sheets }) }, "gold-sheets.pdf");
+      setStatus("Done. " + file.name + " (" + megabytes(file.size) + ") has been downloaded. Keep it safe: it cannot be downloaded again.", "good");
     } catch (err) {
-      if (err instanceof SignedOut) return;
-      if (batchId) {
-        setStatus("The cards were created (batch #" + batchId + ") but the download was interrupted. Download the ZIP again from the list below.", "bad");
-      } else {
-        setStatus("");
-        $("gen-error").textContent = err.message + " If you are not sure whether the cards were made, check the list below before trying again.";
-        $("gen-error").hidden = false;
+      setStatus("");
+      if (!(err instanceof SignedOut)) {
+        $("gold-error").textContent = err.message + " If the download did not arrive, press the button again. Any cards that were not handed over are removed.";
+        $("gold-error").hidden = false;
       }
     } finally {
       busy = false;
-      $("generate").textContent = "Create and download ZIP";
+      btn.textContent = original;
       validate();
-      loadBatches().catch(() => {});
     }
-  }
-
-  async function downloadBatch(id, button) {
-    const original = button.textContent;
-    button.disabled = true;
-    button.textContent = "Preparing…";
-    try {
-      const res = await request("/batches/" + id + "/zip");
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error((data && data.error) || "Could not download.");
-      }
-      saveBlob(await res.blob(), fileNameFrom(res, "qr-batch-" + id + ".zip"));
-    } catch (err) {
-      if (!(err instanceof SignedOut)) alert(err.message);
-    } finally {
-      button.disabled = false;
-      button.textContent = original;
-    }
-  }
-
-  // ---------------- Batches ----------------
-  async function loadBatches() {
-    const list = await getJson("/batches");
-    const box = $("batches");
-    box.textContent = "";
-    if (!list.length) {
-      const p = document.createElement("p");
-      p.className = "empty";
-      p.textContent = "No batches yet. Your first one will appear here.";
-      box.appendChild(p);
-      return;
-    }
-    const head = document.createElement("div");
-    head.className = "batch head";
-    for (const h of ["Batch", "Created", "Cards", ""]) {
-      const s = document.createElement("span");
-      s.textContent = h;
-      head.appendChild(s);
-    }
-    box.appendChild(head);
-
-    for (const b of list) {
-      const row = document.createElement("div");
-      row.className = "batch";
-
-      const num = document.createElement("span");
-      num.className = "num";
-      num.textContent = "#" + b.id;
-
-      const created = document.createElement("span");
-      created.className = "when";
-      created.textContent = when.format(new Date(b.createdAt));
-      if (b.label) {
-        const lab = document.createElement("div");
-        lab.className = "label";
-        lab.textContent = b.label; // plain text, never HTML
-        created.appendChild(lab);
-      }
-
-      const cnt = document.createElement("span");
-      cnt.className = "cnt";
-      cnt.textContent = b.count;
-
-      const act = document.createElement("span");
-      act.className = "act";
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "dl";
-      btn.textContent = "Download ZIP";
-      btn.addEventListener("click", () => downloadBatch(b.id, btn));
-      act.appendChild(btn);
-
-      row.append(num, created, cnt, act);
-      box.appendChild(row);
-    }
-  }
+  });
 
   // ---------------- Cleanup link ----------------
   function renderCleanup() {
@@ -234,12 +165,14 @@
   // ---------------- Start-up and sign-in ----------------
   async function openApp() {
     settings = await getJson("/config");
-    $("qr-example").textContent = settings.exampleUrl;
+    $("silver-url").textContent = settings.silverUrl;
+    document.querySelectorAll(".per-sheet").forEach((el) => { el.textContent = settings.perSheet; });
+    // The card pictures need the sign-in, so they are only requested now (not when the page first loads)
+    document.querySelectorAll("img[data-src]").forEach((img) => { img.src = img.dataset.src; });
     renderChips();
     renderCleanup();
     validate();
     show("app");
-    await loadBatches();
   }
 
   $("login-form").addEventListener("submit", async (e) => {
@@ -271,8 +204,7 @@
     $("passkey").focus();
   });
 
-  $("count").addEventListener("input", validate);
-  $("generate").addEventListener("click", generate);
+  $("sheets").addEventListener("input", validate);
 
   (async function init() {
     try {

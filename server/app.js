@@ -2,8 +2,9 @@
 
 const path = require("path");
 const express = require("express");
-const { createBatch, listBatches, getBatch } = require("./slugs");
-const { buildCardsZip } = require("./zip");
+const { createCards, discardCards } = require("./slugs");
+const { buildPdf, previewSvg } = require("./sheet");
+const { PER_SHEET } = require("./layout");
 const { createGiftRouter, deleteExpired, SLUG } = require("./gifts");
 const { rateLimit } = require("./ratelimit");
 const { createAssets } = require("./assets");
@@ -13,11 +14,14 @@ const PUBLIC_DIR = path.join(__dirname, "..", "public");
 
 // Builds the whole web app. Everything it needs is passed in, so the tests can run it
 // against a throwaway database with their own settings.
-//   config: { isProd, baseUrl, maxBatch, giftDays, cronSecret }
+//   config: { isProd, baseUrl, maxSheets, giftDays, cronSecret }
 function createApp({ db, config, limits = {} }) {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1); // Render sits behind a proxy
+
+  // The silver cards all open the homepage gift, so their QR code is just the site's address
+  const silverUrl = () => config.baseUrl + "/";
 
   app.use((req, res, next) => {
     res.set({
@@ -47,54 +51,66 @@ function createApp({ db, config, limits = {} }) {
 
   admin.get("/config", (req, res) => {
     res.json({
-      maxBatch: config.maxBatch,
-      baseUrl: config.baseUrl,
-      exampleUrl: config.baseUrl + "/g/xxxxxxxxxx",
+      maxSheets: config.maxSheets,
+      perSheet: PER_SHEET,
+      silverUrl: silverUrl(),
+      goldExample: config.baseUrl + "/g/xxxxxxxxxx",
       giftDays: config.giftDays,
       // The link to paste into the scheduler (only shown here, after signing in)
       cleanupUrl: config.cronSecret ? config.baseUrl + "/api/cron/cleanup?key=" + encodeURIComponent(config.cronSecret) : null,
     });
   });
 
-  admin.get("/batches", async (req, res) => {
-    const rows = await listBatches(db);
-    res.json(rows.map((b) => ({ id: b.id, label: b.label, count: b.count, createdAt: b.created_at })));
+  // A picture of one finished card of each kind, for the admin page
+  admin.get("/preview/:edition", (req, res) => {
+    const edition = req.params.edition.replace(/\.svg$/, "");
+    if (edition !== "silver" && edition !== "gold") return res.status(404).json({ error: "Not found." });
+    res.type("image/svg+xml").send(previewSvg(edition, edition === "silver" ? silverUrl() : config.baseUrl + "/g/xxxxxxxxxx"));
   });
 
-  async function sendZip(req, res, batch, slugs) {
-    let aborted = false;
-    res.on("close", () => { if (!res.writableFinished) aborted = true; });
-    const zip = await buildCardsZip(slugs, config.baseUrl, { isAborted: () => aborted });
-    if (!zip) return;
+  function sendPdf(res, pdf, fileName) {
     res.status(200).set({
-      "Content-Type": "application/zip",
-      "Content-Disposition": 'attachment; filename="qr-batch-' + batch.id + "-" + slugs.length + '.zip"',
-      "Content-Length": String(zip.length),
-      "X-Batch-Id": String(batch.id),
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'attachment; filename="' + fileName + '"',
+      "Content-Length": String(pdf.length),
     });
-    res.end(zip);
+    res.end(pdf);
   }
+  const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+  const closedEarly = (res) => { let gone = false; res.on("close", () => { if (!res.writableFinished) gone = true; }); return () => gone; };
 
-  // Create a new batch of empty cards, then send the ZIP of their QR codes
-  admin.post("/batches", auth.sameOrigin, async (req, res) => {
-    const body = req.body || {};
-    const count = body.count;
-    if (!Number.isInteger(count) || count < 1 || count > config.maxBatch) {
-      return res.status(400).json({ error: "Enter a whole number from 1 to " + config.maxBatch + "." });
-    }
-    const label = typeof body.label === "string" ? body.label.trim().slice(0, 60) : "";
-    const { batch, slugs } = await createBatch(db, { count, label });
-    await sendZip(req, res, batch, slugs);
+  // Silver: every card carries the same QR code (the homepage), so nothing is stored. One sheet,
+  // and the shop prints as many copies as they need.
+  admin.get("/sheets/silver", async (req, res) => {
+    const pdf = await buildPdf("silver", [Array(PER_SHEET).fill(silverUrl())], { title: "Silver sheet", isAborted: closedEarly(res) });
+    if (pdf) sendPdf(res, pdf, "silver-sheet.pdf");
   });
 
-  // Download the ZIP of an existing batch again. It is rebuilt from the links the batch saved,
-  // so it is the same set of QR codes even after some of its gifts have expired.
-  admin.get("/batches/:id/zip", async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id < 1) return res.status(400).json({ error: "Bad batch number." });
-    const found = await getBatch(db, id);
-    if (!found) return res.status(404).json({ error: "Batch not found." });
-    await sendZip(req, res, found.batch, found.slugs);
+  // Gold: every card has its own QR code and its own empty row in the database. Each press of the
+  // button makes brand-new cards, so a sheet can be printed once and never repeated by accident.
+  let makingGold = false;
+  admin.post("/sheets/gold", auth.sameOrigin, async (req, res) => {
+    const sheets = (req.body || {}).sheets;
+    if (!Number.isInteger(sheets) || sheets < 1 || sheets > config.maxSheets) {
+      return res.status(400).json({ error: "Enter a whole number of sheets from 1 to " + config.maxSheets + "." });
+    }
+    if (makingGold) return res.status(429).json({ error: "Another gold download is still being prepared. Please wait a moment." });
+    makingGold = true;
+    const aborted = closedEarly(res); // watch from the very start, so a page closed early is never missed
+    let slugs = [];
+    try {
+      slugs = await createCards(db, sheets * PER_SHEET);
+      const pages = [];
+      for (let i = 0; i < sheets; i++) pages.push(slugs.slice(i * PER_SHEET, (i + 1) * PER_SHEET).map((s) => config.baseUrl + "/g/" + s));
+      const pdf = await buildPdf("gold", pages, { title: "Gold sheets", isAborted: aborted });
+      if (!pdf || aborted()) { await discardCards(db, slugs); return; } // the admin left: nothing was handed over
+      sendPdf(res, pdf, "gold-" + sheets + "-sheets-" + stamp() + ".pdf");
+    } catch (err) {
+      if (slugs.length) await discardCards(db, slugs).catch(() => {});
+      throw err;
+    } finally {
+      makingGold = false;
+    }
   });
 
   app.use("/api/admin", admin);
