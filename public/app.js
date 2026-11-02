@@ -360,6 +360,9 @@
     reveal.classList.add("show");
   }
 
+  // The wish shown on the homepage, where there is no sender. It reads well for any bond or occasion.
+  const HOME_WISH = "For someone special";
+
   // Shown whenever the sender leaves the letter empty. It is written to suit every bond and every occasion.
   const DEFAULT_LETTER =
     "Some moments are too special for just a few words, so I wanted to give you something to remember this one by.\n\n" +
@@ -533,14 +536,15 @@
 
   (async function init() {
     if (!cardId) {
+      // Homepage: the same gift a receiver sees, with a wish that suits anyone and the built-in letter
       await fontsReady;
-      showMessage("Scan your card", "Scan the QR code on your gift card to open your gift.");
+      showGift({ wish: HOME_WISH, letter: null });
       return;
     }
     try {
       const card = await api.getCard(cardId);
       if (card.status !== "empty" && card.status !== "active") {
-        location.replace("/greet"); // expired, deleted or never issued: the link no longer works
+        location.replace("/"); // expired, deleted or never issued: the link no longer works
         return;
       }
       await fontsReady;

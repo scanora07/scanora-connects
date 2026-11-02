@@ -29,10 +29,6 @@
   --muted: #8a6573;
 }
 
-/* greet.html hides the page until the fonts are ready (see the script in its head) */
-#app { transition: opacity .3s ease; }
-html.fonts-wait #app { opacity: 0; }
-
 * { box-sizing: border-box; }
 
 html, body { margin: 0; min-height: 100%; }

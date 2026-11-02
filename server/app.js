@@ -4,7 +4,7 @@ const path = require("path");
 const express = require("express");
 const { createBatch, listBatches, getBatch } = require("./slugs");
 const { buildCardsZip } = require("./zip");
-const { createGiftRouter, deleteExpired } = require("./gifts");
+const { createGiftRouter, deleteExpired, SLUG } = require("./gifts");
 const { rateLimit } = require("./ratelimit");
 const auth = require("./auth");
 
@@ -26,7 +26,7 @@ function createApp({ db, config, limits = {} }) {
       "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     });
     if (config.isProd) res.set("Strict-Transport-Security", "max-age=15552000");
-    if (/^\/(admin|api\/admin|g\/|greet)/.test(req.path)) res.set("X-Robots-Tag", "noindex, nofollow");
+    if (/^\/(admin|api\/admin|g\/)/.test(req.path)) res.set("X-Robots-Tag", "noindex, nofollow");
     next();
   });
 
@@ -119,19 +119,26 @@ function createApp({ db, config, limits = {} }) {
   app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 
   // ---------------- Website ----------------
+  // The homepage ("/") shows a sample gift. A card link that cannot possibly be real goes straight there;
+  // a well-formed link that is unknown or expired is sent there by the page itself once the lookup says so.
   app.get("/g/:slug", (req, res) => {
+    if (!SLUG.test(req.params.slug)) return res.redirect(302, "/");
     res.set("Cache-Control", "no-cache");
     res.sendFile(path.join(PUBLIC_DIR, "index.html"));
   });
-  // extensions: "/greet" opens greet.html. Fonts never change under the same name, so browsers keep them for a year.
+  // Fonts never change under the same name, so browsers keep them for a year.
   app.use(express.static(PUBLIC_DIR, {
     maxAge: config.isProd ? "1h" : 0,
-    extensions: ["html"],
     setHeaders(res, file) {
       if (file.endsWith(".woff2")) res.set("Cache-Control", "public, max-age=31536000, immutable");
     },
   }));
-  app.use((req, res) => res.status(404).type("text").send("Not found"));
+  // Any other address (old links, typos, the retired /greet page) lands on the homepage.
+  // Missing files, such as an absent image, still get a plain 404.
+  app.use((req, res) => {
+    if ((req.method === "GET" || req.method === "HEAD") && !path.extname(req.path)) return res.redirect(302, "/");
+    res.status(404).type("text").send("Not found");
+  });
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {

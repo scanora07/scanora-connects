@@ -59,7 +59,7 @@ function createGiftRouter(db, { giftDays, limits = {} }) {
 
   // What is on this card? "empty" (show the form), "active" (show the gift) or "gone" (the link no
   // longer works: it expired and its row was deleted, or it was never a real card). The page sends
-  // the visitor to the greeting page when a card is gone.
+  // the visitor to the homepage when a card is gone.
   router.get("/gift/:slug", readLimit, async (req, res) => {
     const slug = req.params.slug;
     if (!SLUG.test(slug)) return res.status(404).json({ status: "gone" });
