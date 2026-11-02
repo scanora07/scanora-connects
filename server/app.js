@@ -122,7 +122,7 @@ function createApp({ db, config, limits = {} }) {
   // ---------------- Website ----------------
   // In production the page, stylesheet and scripts are served pre-compressed (see assets.js).
   // While developing, files are read from disk on every request so edits show up straight away.
-  const assets = config.isProd ? createAssets(PUBLIC_DIR, { maxAge: 3600 }) : null;
+  const assets = config.isProd ? createAssets(PUBLIC_DIR) : null;
 
   // The homepage ("/") is itself a gift (see HOME_WISH in app.js). A card link that cannot possibly be real goes straight there;
   // a well-formed link that is unknown or expired is sent there by the page itself once the lookup says so.
@@ -135,7 +135,6 @@ function createApp({ db, config, limits = {} }) {
   if (assets) app.use(assets.middleware);
   // Fonts never change under the same name, so browsers keep them for a year.
   app.use(express.static(PUBLIC_DIR, {
-    maxAge: config.isProd ? "1h" : 0,
     setHeaders(res, file) {
       if (file.endsWith(".woff2")) res.set("Cache-Control", "public, max-age=31536000, immutable");
     },
