@@ -360,8 +360,9 @@
     reveal.classList.add("show");
   }
 
-  // The wish shown on the homepage, where there is no sender. It reads well for any bond or occasion.
-  const HOME_WISH = "For someone special";
+  // The wish of the homepage gift, which has no sender. It is a real wish, addressed to whoever is
+  // reading, and it suits any bond or occasion.
+  const HOME_WISH = "Wishing you endless happiness";
 
   // Shown whenever the sender leaves the letter empty. It is written to suit every bond and every occasion.
   const DEFAULT_LETTER =
@@ -536,7 +537,7 @@
 
   (async function init() {
     if (!cardId) {
-      // Homepage: the same gift a receiver sees, with a wish that suits anyone and the built-in letter
+      // Homepage: a real gift for whoever lands here, with a wish that suits anyone and the built-in letter
       await fontsReady;
       showGift({ wish: HOME_WISH, letter: null });
       return;

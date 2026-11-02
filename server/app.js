@@ -119,7 +119,7 @@ function createApp({ db, config, limits = {} }) {
   app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 
   // ---------------- Website ----------------
-  // The homepage ("/") shows a sample gift. A card link that cannot possibly be real goes straight there;
+  // The homepage ("/") is itself a gift (see HOME_WISH in app.js). A card link that cannot possibly be real goes straight there;
   // a well-formed link that is unknown or expired is sent there by the page itself once the lookup says so.
   app.get("/g/:slug", (req, res) => {
     if (!SLUG.test(req.params.slug)) return res.redirect(302, "/");

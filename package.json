@@ -2,7 +2,7 @@
   "name": "scanora-connects",
   "version": "1.0.0",
   "private": true,
-  "description": "Gift cards with QR codes: gift pages, a sample homepage gift and an admin page that makes batches of QR codes",
+  "description": "Gift cards with QR codes: gift pages, a universal gift on the homepage and an admin page that makes batches of QR codes",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
