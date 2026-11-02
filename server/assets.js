@@ -2,7 +2,7 @@
 
 // Serves the page, stylesheet and scripts compressed. Each file is compressed once at startup (the
 // smallest brotli and gzip versions) and kept in memory, so a request costs no CPU on a small free
-// server and the visitor downloads roughly a third of the bytes. Fonts, images and the music are
+// server and the visitor downloads roughly a third of the bytes. Fonts are already compressed, so they
 // already compressed, so they are left to express.static.
 
 const fs = require("fs");

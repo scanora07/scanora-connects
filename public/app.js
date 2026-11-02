@@ -15,8 +15,6 @@
   function show(name) {
     views.forEach((v) => $("view-" + v).classList.toggle("active", v === name));
     document.body.dataset.view = name;
-    musicBtn.hidden = !(musicStarted && name === "letter");
-    syncMusic();
     window.scrollTo(0, 0);
   }
 
@@ -48,40 +46,6 @@
       return { ok: false, error: body.error || "Something went wrong. Please try again." };
     },
   };
-
-  // ---- Music ----
-  // Plays only after the "Tap to open letter" tap (browsers block autoplay) and keeps playing on
-  // the letter screen. The file is fetched while the wish is being written, so it is ready at the tap.
-  const MUSIC_FILE = "/assets/music.mp3";
-  const musicBtn = $("music-btn");
-  const audioEl = $("bgm");
-  let muted = false;
-  let musicStarted = false;
-  let opening = false; // true while the envelope is opening, so the music begins with the tap
-  let openTimer = 0;
-
-  function startMusic() {
-    if (!audioEl.src) audioEl.src = MUSIC_FILE;
-    musicStarted = true;
-    syncMusic();
-  }
-
-  // Music belongs to the letter screen only: it is silent on screen 1 and resumes on screen 2.
-  // It starts at the tap (while the envelope opens) so phones treat it as user-initiated.
-  function syncMusic() {
-    if (!musicStarted) return;
-    const wanted = document.body.dataset.view === "letter" || opening;
-    audioEl.muted = muted;
-    if (wanted) audioEl.play().catch(() => {});
-    else audioEl.pause();
-  }
-
-  musicBtn.addEventListener("click", () => {
-    muted = !muted;
-    musicBtn.classList.toggle("muted", muted);
-    musicBtn.setAttribute("aria-label", muted ? "Unmute music" : "Mute music");
-    syncMusic();
-  });
 
   // ---- Pen writing ----
   // Draws the wish stroke by stroke, like a pen on paper, using the single-line font in
@@ -248,11 +212,11 @@
     "Whatever today brings, I hope it is filled with happiness, warmth and the people who love you. May every wish you carry in your heart find its way to you.\n\n" +
     "With love and warm wishes, always.";
 
+  let openTimer = 0; // the pending "show the letter" step while the envelope opens
+
   $("open-btn").addEventListener("click", () => {
     const btn = $("open-btn");
     if (btn.classList.contains("opening")) return;
-    opening = true;
-    startMusic();
     const letter = currentGift.letter || DEFAULT_LETTER;
     $("letter-dear").textContent = currentGift.wish;
     $("letter-body").textContent = letter;
@@ -263,19 +227,12 @@
     btn.classList.add("opening");
     openTimer = setTimeout(() => {
       show("letter");
-      opening = false;
       btn.classList.remove("opening");
     }, reduceMotion ? 0 : 1250);
   });
 
   function showGift(gift) {
     currentGift = gift;
-    // Start fetching the music while the wish is being written, so it is ready at the tap.
-    // Not during the sender's preview: most senders never tap the envelope there.
-    if (!audioEl.src && !document.body.classList.contains("previewing")) {
-      audioEl.preload = "auto";
-      audioEl.src = MUSIC_FILE;
-    }
     let wishEnd = drawWish($("wish-text"), gift.wish, 0.3);
     if (wishEnd === null) wishEnd = writeText($("wish-text"), gift.wish, 0.3, 0.12);
 
@@ -343,7 +300,6 @@
 
   function leavePreview() {
     clearTimeout(openTimer);
-    opening = false;
     $("open-btn").classList.remove("opening");
     document.body.classList.remove("previewing");
     previewBar.hidden = true;
