@@ -16,7 +16,7 @@ const { EDITIONS, cardSvg } = require("./card");
 const { ART_PX } = require("../server/layout");
 
 const OUT = path.join(__dirname, "..", "server", "art");
-const FONT = "data:font/woff2;base64," + fs.readFileSync(path.join(__dirname, "..", "public", "assets", "dancing-700.woff2")).toString("base64");
+const FONT = "data:font/woff2;base64," + fs.readFileSync(path.join(__dirname, "fonts", "AlexBrush.woff2")).toString("base64");
 
 function findBrowser() {
   const candidates = [
@@ -34,7 +34,7 @@ function findBrowser() {
 }
 
 const page = (svg) => `<!doctype html><meta charset="utf-8"><style>
-@font-face { font-family: "Dancing Script"; font-weight: 700; src: url("${FONT}") format("woff2"); }
+@font-face { font-family: "Alex Brush"; src: url("${FONT}") format("woff2"); }
 html, body { margin: 0; background: #000; } svg { display: block; }
 </style>${svg}`;
 
@@ -49,7 +49,7 @@ function toRgbPng(buffer) {
   const browser = await chromium.launch({ executablePath: findBrowser(), headless: true });
   try {
     for (const edition of Object.keys(EDITIONS)) {
-      for (const [size, kind] of [[ART_PX, "print"], [470, "preview"]]) {
+      for (const [size, kind] of [[ART_PX, "print"], [560, "preview"]]) {
         const p = await browser.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 });
         await p.setContent(page(cardSvg(edition, size)));
         await p.evaluate(() => document.fonts.ready);

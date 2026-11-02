@@ -88,23 +88,6 @@ function qrRuns(text) {
 
 const num = (v) => String(Math.round(v * 1000) / 1000);
 
-// A rounded rectangle path. (x, y) is the lower-left corner, as in PDF.
-function roundedRect(x, y, w, h, r) {
-  const k = r * 0.5523;
-  return [
-    `${num(x + r)} ${num(y)} m`,
-    `${num(x + w - r)} ${num(y)} l`,
-    `${num(x + w - r + k)} ${num(y)} ${num(x + w)} ${num(y + r - k)} ${num(x + w)} ${num(y + r)} c`,
-    `${num(x + w)} ${num(y + h - r)} l`,
-    `${num(x + w)} ${num(y + h - r + k)} ${num(x + w - r + k)} ${num(y + h)} ${num(x + w - r)} ${num(y + h)} c`,
-    `${num(x + r)} ${num(y + h)} l`,
-    `${num(x + r - k)} ${num(y + h)} ${num(x)} ${num(y + h - r + k)} ${num(x)} ${num(y + h - r)} c`,
-    `${num(x)} ${num(y + r)} l`,
-    `${num(x)} ${num(y + r - k)} ${num(x + r - k)} ${num(y)} ${num(x + r)} ${num(y)} c`,
-    "h",
-  ].join("\n");
-}
-
 const sheetW = L.SHEET.width * PT;
 const sheetH = L.SHEET.height * PT;
 const cardPt = L.CARD * PT;
@@ -112,7 +95,6 @@ const bleedPt = L.BLEED * PT;
 const plate = {
   size: (L.PLATE_PX.size / L.DPI) * PT,
   top: (L.PLATE_PX.top / L.DPI) * PT,
-  radius: (L.PLATE_PX.radius / L.DPI) * PT,
 };
 
 // Where a card's trim corner sits on the sheet, in points from the top-left of the page
@@ -133,7 +115,7 @@ function drawCard(row, col, url) {
   const px = o.x + (cardPt - plate.size) / 2;
   const py = o.y + plate.top;
   out.push("0 0 0 0 k"); // paper white: no ink at all, the best contrast the QR code can get
-  out.push(roundedRect(px, sheetH - (py + plate.size), plate.size, plate.size, plate.radius));
+  out.push(`${num(px)} ${num(sheetH - (py + plate.size))} ${num(plate.size)} ${num(plate.size)} re`); // a perfect square
   out.push("f");
 
   const { n, runs } = qrRuns(url);
@@ -236,7 +218,7 @@ function previewSvg(edition, url) {
   const d = runs.map(([r, c, len]) => `M${num(x + (QUIET + c) * m)} ${num(y + (QUIET + r) * m)}h${num(len * m)}v${num(m)}h${num(-len * m)}z`).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${L.ART_PX} ${L.ART_PX}">` +
     `<image href="data:image/jpeg;base64,${jpg}" width="${L.ART_PX}" height="${L.ART_PX}"/>` +
-    `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${L.PLATE_PX.radius}" fill="#fff"/>` +
+    `<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="#fff"/>` +
     `<path d="${d}" fill="#000"/></svg>`;
 }
 

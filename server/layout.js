@@ -18,9 +18,10 @@ const ART_PX = Math.round((CARD + 2 * BLEED) * DPI);   // 1410
 const TRIM_PX = Math.round(CARD * DPI);                 // 1350
 const BLEED_PX = Math.round(BLEED * DPI);               // 30
 
-// The white plate that carries the QR code, in pixels measured from the card's trim corner.
-// It is centred left to right. The QR code's own quiet border is part of the plate.
-const PLATE_PX = { size: 720, top: 340, radius: 44 };
+// The white square that carries the QR code, in pixels measured from the card's trim corner.
+// It is a perfect square with sharp corners (radius 0), centred left to right. The QR code's own
+// quiet border is part of the square.
+const PLATE_PX = { size: 600, top: 550, radius: 0 };
 
 const gridWidth = COLS * CARD + (COLS - 1) * GUTTER;    // 11.65
 const gridHeight = ROWS * CARD + (ROWS - 1) * GUTTER;   // 18.7
