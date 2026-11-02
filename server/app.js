@@ -6,6 +6,7 @@ const { createBatch, listBatches, getBatch } = require("./slugs");
 const { buildCardsZip } = require("./zip");
 const { createGiftRouter, deleteExpired, SLUG } = require("./gifts");
 const { rateLimit } = require("./ratelimit");
+const { createAssets } = require("./assets");
 const auth = require("./auth");
 
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
@@ -119,13 +120,19 @@ function createApp({ db, config, limits = {} }) {
   app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 
   // ---------------- Website ----------------
+  // In production the page, stylesheet and scripts are served pre-compressed (see assets.js).
+  // While developing, files are read from disk on every request so edits show up straight away.
+  const assets = config.isProd ? createAssets(PUBLIC_DIR, { maxAge: 3600 }) : null;
+
   // The homepage ("/") is itself a gift (see HOME_WISH in app.js). A card link that cannot possibly be real goes straight there;
   // a well-formed link that is unknown or expired is sent there by the page itself once the lookup says so.
   app.get("/g/:slug", (req, res) => {
     if (!SLUG.test(req.params.slug)) return res.redirect(302, "/");
+    if (assets) return assets.page(req, res, "/index.html");
     res.set("Cache-Control", "no-cache");
     res.sendFile(path.join(PUBLIC_DIR, "index.html"));
   });
+  if (assets) app.use(assets.middleware);
   // Fonts never change under the same name, so browsers keep them for a year.
   app.use(express.static(PUBLIC_DIR, {
     maxAge: config.isProd ? "1h" : 0,

@@ -262,8 +262,6 @@ body.previewing #app { padding-bottom: 92px; }
 .btn:active { transform: scale(.98); }
 .btn:disabled { opacity: .6; }
 
-.btn-ghost { width: auto; padding: 11px 26px; font-size: 1rem; }
-
 /* ---------- Screen 1: the heart ---------- */
 .stage { text-align: center; }
 
@@ -385,7 +383,7 @@ body.previewing #app { padding-bottom: 92px; }
    wish shrinks to fit instead of pushing everything off the page. */
 .pen-svg {
   display: block;
-  width: calc(min(100%, 300px) * var(--r, 1));
+  width: min(100%, 300px);
   max-width: 100%;
   max-height: 20dvh;
   margin: 0 auto;

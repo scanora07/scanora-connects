@@ -59,4 +59,4 @@ async function getBatch(db, id) {
   return { batch, slugs };
 }
 
-module.exports = { ALPHABET, SLUG_LENGTH, makeSlug, createBatch, listBatches, getBatch };
+module.exports = { createBatch, listBatches, getBatch };

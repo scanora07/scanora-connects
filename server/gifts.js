@@ -115,4 +115,4 @@ async function deleteExpired(db) {
   return rows.length;
 }
 
-module.exports = { createGiftRouter, deleteExpired, validateGift, SLUG };
+module.exports = { createGiftRouter, deleteExpired, SLUG };

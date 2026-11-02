@@ -76,4 +76,4 @@ function qrPng(text) {
   ]);
 }
 
-module.exports = { qrPng, QUIET };
+module.exports = { qrPng };

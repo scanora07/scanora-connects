@@ -25,7 +25,7 @@
   //   getCard(slug)       -> { status: "empty" | "active" | "gone", gift?, days? }
   //   createCard(slug, d) -> { ok: true } | { ok: false, error }
 
-  const liveApi = {
+  const api = {
     async getCard(slug) {
       const res = await fetch("/api/gift/" + encodeURIComponent(slug), { cache: "no-store" });
       if (res.ok || res.status === 404) return res.json();
@@ -49,154 +49,31 @@
     },
   };
 
-  const api = liveApi;
-
   // ---- Music ----
-  // Plays only after the "Tap to open letter" tap (browsers block autoplay) and keeps
-  // playing on the letter screen. It uses assets/music.mp3; if that file is missing or the
-  // browser cannot play it, the built-in synthesized music-box loop takes over.
+  // Plays only after the "Tap to open letter" tap (browsers block autoplay) and keeps playing on
+  // the letter screen. The file is fetched while the wish is being written, so it is ready at the tap.
   const MUSIC_FILE = "/assets/music.mp3";
   const musicBtn = $("music-btn");
   const audioEl = $("bgm");
   let muted = false;
   let musicStarted = false;
-  let useFile = true;
   let opening = false; // true while the envelope is opening, so the music begins with the tap
   let openTimer = 0;
 
-  const synth = (() => {
-    const BEAT = 60 / 66;
-    const STEPS_PER_BAR = 6;
-    const hz = (n) => 440 * 2 ** ((n - 69) / 12);
-    // C - Am - F - G, twice (bass note + triad), with a melody line over each bar
-    const bars = [
-      { bass: 48, triad: [60, 64, 67], mel: [76, 0, 79, 0, 76, 0] },
-      { bass: 45, triad: [57, 60, 64], mel: [81, 0, 79, 0, 76, 0] },
-      { bass: 41, triad: [57, 60, 65], mel: [77, 0, 81, 0, 77, 0] },
-      { bass: 43, triad: [55, 59, 62], mel: [79, 0, 74, 0, 71, 0] },
-      { bass: 48, triad: [60, 64, 67], mel: [84, 0, 79, 0, 76, 0] },
-      { bass: 45, triad: [57, 60, 64], mel: [81, 0, 76, 0, 72, 0] },
-      { bass: 41, triad: [57, 60, 65], mel: [77, 0, 79, 0, 81, 0] },
-      { bass: 43, triad: [55, 59, 62], mel: [74, 0, 71, 0, 67, 0] },
-    ];
-    const ARP = [null, 0, 1, 2, 1, 0]; // step 0 is the bass note
-    const LEVEL = 0.6;
-
-    let ctx = null, master = null, bus = null, timer = null, step = 0, nextTime = 0;
-
-    function note(midi, when, len, vol, type) {
-      const osc = ctx.createOscillator();
-      const bell = ctx.createOscillator();
-      const g = ctx.createGain();
-      const gb = ctx.createGain();
-      osc.type = type;
-      bell.type = "sine";
-      osc.frequency.value = hz(midi);
-      bell.frequency.value = hz(midi) * 3;
-      g.gain.setValueAtTime(0.0001, when);
-      g.gain.exponentialRampToValueAtTime(vol, when + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, when + len);
-      gb.gain.value = 0.18;
-      osc.connect(g);
-      bell.connect(gb).connect(g);
-      g.connect(bus);
-      osc.start(when);
-      bell.start(when);
-      osc.stop(when + len + 0.05);
-      bell.stop(when + len + 0.05);
-    }
-
-    function schedule(i, when) {
-      const bar = bars[Math.floor(i / STEPS_PER_BAR) % bars.length];
-      const s = i % STEPS_PER_BAR;
-      if (s === 0) note(bar.bass, when, 2.2, 0.16, "sine");
-      else note(bar.triad[ARP[s]] + 12, when, 1.0, 0.07, "triangle");
-      if (bar.mel[s]) note(bar.mel[s], when, 1.6, 0.13, "triangle");
-    }
-
-    function tick() {
-      while (nextTime < ctx.currentTime + 0.3) {
-        schedule(step, nextTime);
-        step += 1;
-        nextTime += BEAT / 2;
-      }
-    }
-
-    function start() {
-      if (ctx) return;
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      ctx = new AC();
-      master = ctx.createGain();
-      master.gain.value = 0.0001;
-      master.connect(ctx.destination);
-      bus = ctx.createGain();
-      bus.connect(master);
-      // Soft echo
-      const delay = ctx.createDelay(1);
-      const fb = ctx.createGain();
-      const wet = ctx.createGain();
-      delay.delayTime.value = 0.34;
-      fb.gain.value = 0.3;
-      wet.gain.value = 0.35;
-      bus.connect(delay);
-      delay.connect(fb).connect(delay);
-      delay.connect(wet).connect(master);
-      nextTime = ctx.currentTime + 0.1;
-      ctx.resume();
-      tick();
-      timer = setInterval(tick, 100);
-      master.gain.setTargetAtTime(muted ? 0.0001 : LEVEL, ctx.currentTime, 1.2);
-    }
-
-    function setMuted(m, tau = 0.05) {
-      if (master) master.gain.setTargetAtTime(m ? 0.0001 : LEVEL, ctx.currentTime, tau);
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (!ctx) return;
-      if (document.hidden) ctx.suspend();
-      else ctx.resume();
-    });
-
-    return { start, setMuted, get ready() { return !!ctx; } };
-  })();
-
   function startMusic() {
-    if (useFile) {
-      if (!audioEl.src) audioEl.src = MUSIC_FILE;
-      musicStarted = true;
-      syncMusic();
-      return;
-    }
-    synth.start();
-    musicStarted = synth.ready;
+    if (!audioEl.src) audioEl.src = MUSIC_FILE;
+    musicStarted = true;
     syncMusic();
   }
-
-  // If the file cannot be loaded or played, switch to the built-in loop
-  audioEl.addEventListener("error", () => {
-    if (!useFile) return;
-    useFile = false;
-    audioEl.removeAttribute("src");
-    if (musicStarted) {
-      synth.start();
-      syncMusic();
-    }
-  });
 
   // Music belongs to the letter screen only: it is silent on screen 1 and resumes on screen 2.
   // It starts at the tap (while the envelope opens) so phones treat it as user-initiated.
   function syncMusic() {
     if (!musicStarted) return;
     const wanted = document.body.dataset.view === "letter" || opening;
-    if (useFile) {
-      audioEl.muted = muted;
-      if (wanted) audioEl.play().catch(() => {});
-      else audioEl.pause();
-    } else {
-      synth.setMuted(muted || !wanted, wanted ? 0.4 : 0.15);
-    }
+    audioEl.muted = muted;
+    if (wanted) audioEl.play().catch(() => {});
+    else audioEl.pause();
   }
 
   musicBtn.addEventListener("click", () => {
@@ -393,8 +270,9 @@
 
   function showGift(gift) {
     currentGift = gift;
-    // Start fetching the music now, while the wish is being drawn, so it is ready at the tap
-    if (useFile && !audioEl.src) {
+    // Start fetching the music while the wish is being written, so it is ready at the tap.
+    // Not during the sender's preview: most senders never tap the envelope there.
+    if (!audioEl.src && !document.body.classList.contains("previewing")) {
       audioEl.preload = "auto";
       audioEl.src = MUSIC_FILE;
     }
@@ -527,19 +405,19 @@
     show("expired");
   }
 
-  // The handwriting fonts load while the card is being looked up. The first screen waits for them
-  // (at most 2.5 s), so the text never shows in a plain font and then jumps to the real one.
-  const fontsReady = (() => {
-    if (!document.fonts || !document.fonts.load) return Promise.resolve();
-    const loaded = Promise.all([document.fonts.load("700 1em Caveat"), document.fonts.load("500 1em Caveat")]).catch(() => {});
-    return Promise.race([loaded, new Promise((resolve) => setTimeout(resolve, 2500))]);
-  })();
+  // The bold handwriting font starts downloading right away. Only the form needs it on screen at once
+  // (the gift's heart screen is drawn with the pen), so the form waits for it, at most 2.5 s, and its
+  // title never shows in a plain font and then jumps. The regular weight is only needed by the letter,
+  // so it loads in the background once a gift is on screen.
+  const loadFont = (spec) => (document.fonts && document.fonts.load ? document.fonts.load(spec).catch(() => {}) : Promise.resolve());
+  const boldFont = loadFont("700 1em Caveat");
+  const boldFontReady = () => Promise.race([boldFont, new Promise((resolve) => setTimeout(resolve, 2500))]);
 
   (async function init() {
     if (!cardId) {
       // Homepage: a real gift for whoever lands here, with a wish that suits anyone and the built-in letter
-      await fontsReady;
       showGift({ wish: HOME_WISH, letter: null });
+      loadFont("500 1em Caveat");
       return;
     }
     try {
@@ -548,13 +426,16 @@
         location.replace("/"); // expired, deleted or never issued: the link no longer works
         return;
       }
-      await fontsReady;
       if (card.status === "empty") {
         if (card.days) setGiftDays(card.days);
+        await boldFontReady();
         show("form");
-      } else showGift(card.gift);
+      } else {
+        showGift(card.gift);
+        loadFont("500 1em Caveat");
+      }
     } catch {
-      await fontsReady;
+      await boldFontReady();
       showMessage("Something went wrong", "Please try again in a moment.");
     }
   })();
