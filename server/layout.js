@@ -20,16 +20,15 @@ const MARGIN = {
 };
 
 // Where the QR code goes on each card, measured from the card's top-left corner (the trimmed edge).
-//   x     distance from the left edge to the left side of the white square
-//   y     distance from the top edge to the top of the white square
-//   size  width and height of the white square (it is always a perfect square with sharp corners)
-// The QR code is drawn inside the white square with a quiet white border, so keep size at 1 or more.
-// The picture you put in server/art is shown exactly as it is; this square is drawn on top of it,
-// so leave that area of your picture plain and light.
+//   x     distance from the left edge to the left side of the square backing
+//   y     distance from the top edge to the top of the square backing
+//   size  width and height of the backing square (it always has sharp corners)
+// The backing uses the image's color at the center of this area, covering the guide marks underneath.
+// Keep the area plain and light so the QR code's quiet zone remains easy to scan.
 // Example: a square centred left to right is x = (2.25 - size) / 2.
 const QR = {
-  silver: { x: 0.625, y: 0.93, size: 1 },
-  gold:   { x: 0.625, y: 0.93, size: 1 },
+  silver: { x: 0.74, y: 0.86, size: 0.77 },
+  gold:   { x: 0.74, y: 0.86, size: 0.77 },
 };
 
 for (const [name, q] of Object.entries(QR)) {

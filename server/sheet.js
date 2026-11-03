@@ -8,9 +8,9 @@
 //    spot on your picture is a spot on the card. A slightly enlarged copy is drawn underneath, which
 //    only shows in the thin strip that is cut away, so a cut that is a little off never leaves a
 //    white sliver.
-//  - The QR code and the white square behind it are drawn as vector shapes, so they are perfectly
-//    sharp at any print resolution. The dark dots use pure black ink (100% K) only, never a mix of
-//    inks, which can show coloured fringes if the printer's colours are a hair out of line.
+//  - Silver artwork contains its fixed homepage QR. Gold QR codes and their matching-background
+//    squares are drawn as vector shapes, so they are perfectly sharp at any print resolution.
+//    Gold QR dots use pure black ink (100% K) only, avoiding coloured fringes from misaligned inks.
 //
 // A PDF with one image and plain drawing commands is simple to write directly, so no PDF library is used.
 
@@ -19,6 +19,7 @@ const path = require("path");
 const zlib = require("zlib");
 const QRCode = require("qrcode");
 const { PNG } = require("pngjs");
+const jpeg = require("jpeg-js");
 const L = require("./layout");
 
 const PT = 72; // points per inch
@@ -40,6 +41,15 @@ function findArt(edition) {
   return null;
 }
 
+function sampleQrBackground(data, width, height, channels, edition, alphaChannel = -1) {
+  const q = L.QR[edition];
+  const x = Math.min(width - 1, Math.floor(width * (q.x + q.size / 2) / L.CARD));
+  const y = Math.min(height - 1, Math.floor(height * (q.y + q.size / 2) / L.CARD));
+  const i = (y * width + x) * channels;
+  const alpha = alphaChannel < 0 ? 1 : data[i + alphaChannel] / 255;
+  return [0, 1, 2].map((channel) => Math.round(data[i + channel] * alpha + 255 * (1 - alpha)));
+}
+
 // JPG is put in the PDF as it is; PNG is decoded and re-packed (transparent areas become white paper)
 function loadArt(edition) {
   const file = findArt(edition);
@@ -56,7 +66,12 @@ function loadArt(edition) {
       pos += bytes[pos + 1] === 0xd8 ? 2 : 2 + bytes.readUInt16BE(pos + 2);
     }
     if (pos + 9 >= bytes.length) throw new Error(path.basename(file) + " is not a normal JPG. Save it again as a JPG or PNG.");
-    art = { kind: "jpeg", mime: "image/jpeg", stream: bytes, height: bytes.readUInt16BE(pos + 5), width: bytes.readUInt16BE(pos + 7), components: bytes[pos + 9] };
+    const decoded = jpeg.decode(bytes, { useTArray: true });
+    art = {
+      kind: "jpeg", mime: "image/jpeg", stream: bytes,
+      height: bytes.readUInt16BE(pos + 5), width: bytes.readUInt16BE(pos + 7), components: bytes[pos + 9],
+      qrBackground: sampleQrBackground(decoded.data, decoded.width, decoded.height, 4, edition, 3),
+    };
   } else if (bytes.readUInt32BE(0) === 0x89504e47) {
     const png = PNG.sync.read(bytes);
     const rgb = Buffer.alloc(png.width * png.height * 3);
@@ -64,7 +79,11 @@ function loadArt(edition) {
       const k = png.data[i + 3] / 255;
       for (let c = 0; c < 3; c++) rgb[j + c] = Math.round(png.data[i + c] * k + 255 * (1 - k));
     }
-    art = { kind: "png", mime: "image/png", stream: zlib.deflateSync(rgb, { level: 6 }), width: png.width, height: png.height, components: 3 };
+    art = {
+      kind: "png", mime: "image/png", stream: zlib.deflateSync(rgb, { level: 6 }),
+      width: png.width, height: png.height, components: 3,
+      qrBackground: sampleQrBackground(rgb, png.width, png.height, 3, edition),
+    };
   } else {
     throw new Error(path.basename(file) + " is not a JPG or PNG picture.");
   }
@@ -84,7 +103,7 @@ function artProblem(edition) {
   }
 }
 
-// The white square for a card's QR code, in points from the card's top-left corner
+// The square backing for a card's QR code, in points from the card's top-left corner
 function qrBox(edition) {
   const q = L.QR[edition];
   return { x: q.x * PT, y: q.y * PT, size: q.size * PT };
@@ -92,7 +111,7 @@ function qrBox(edition) {
 // ---------------------------------------------------------------- QR codes
 
 // The dark dots of a QR code as horizontal runs: [row, firstColumn, length]. Also returns the size in dots.
-// The silver sheet draws the same address 40 times, so the last few results are kept.
+// Gold sheets can repeat QR addresses, so the last few results are kept.
 const runsCache = new Map();
 function qrRuns(text) {
   if (runsCache.has(text)) return runsCache.get(text);
@@ -131,8 +150,8 @@ function cardOrigin(row, col) {
   };
 }
 
-// Draws one card: the picture, the white square and the QR code
-function drawCard(row, col, url, qr) {
+// Draws one card: the picture and, when needed, a matching-background QR quiet zone and QR code
+function drawCard(row, col, url, qr, background) {
   const o = cardOrigin(row, col);
   const out = [];
   // First a slightly enlarged copy that reaches into the strip that gets cut away, then the picture
@@ -141,9 +160,11 @@ function drawCard(row, col, url, qr) {
   out.push(`q ${num(big)} 0 0 ${num(big)} ${num(o.x - bleedPt)} ${num(sheetH - (o.y + cardPt + bleedPt))} cm /Art Do Q`);
   out.push(`q ${num(cardPt)} 0 0 ${num(cardPt)} ${num(o.x)} ${num(sheetH - (o.y + cardPt))} cm /Art Do Q`);
 
+  if (!qr) return out.join("\n");
+
   const px = o.x + qr.x;
   const py = o.y + qr.y;
-  out.push("0 0 0 0 k"); // paper white: no ink at all, the best contrast the QR code can get
+  out.push(`${num(background[0] / 255)} ${num(background[1] / 255)} ${num(background[2] / 255)} rg`);
   out.push(`${num(px)} ${num(sheetH - (py + qr.size))} ${num(qr.size)} ${num(qr.size)} re`); // a perfect square
   out.push("f");
 
@@ -189,7 +210,7 @@ const FIRST_PAGE = 5;
 async function buildPdf(edition, pages, { title = "Cards", isAborted = () => false } = {}) {
   if (!pages.length) throw new Error("Nothing to print.");
   const art = loadArt(edition);
-  const qr = qrBox(edition);
+  const qr = edition === "silver" ? null : qrBox(edition);
   const marks = cutMarks();
   const parts = [];
   const offsets = [];
@@ -221,7 +242,7 @@ async function buildPdf(edition, pages, { title = "Cards", isAborted = () => fal
     const id = FIRST_PAGE + 2 * i;
     object(id, `/Type /Page /Parent 2 0 R /MediaBox ${box} /TrimBox ${box} /BleedBox ${box} /Resources << /XObject << /Art ${OBJ_ART} 0 R >> >> /Contents ${id + 1} 0 R`);
     const drawing = [];
-    pages[i].slice(0, L.PER_SHEET).forEach((url, k) => drawing.push(drawCard(Math.floor(k / L.COLS), k % L.COLS, url, qr)));
+    pages[i].slice(0, L.PER_SHEET).forEach((url, k) => drawing.push(drawCard(Math.floor(k / L.COLS), k % L.COLS, url, qr, art.qrBackground)));
     drawing.push(marks);
     object(id + 1, "/Filter /FlateDecode", zlib.deflateSync(Buffer.from(drawing.join("\n"), "latin1"), { level: 6 }));
     await new Promise((resolve) => setImmediate(resolve));
@@ -237,10 +258,13 @@ async function buildPdf(edition, pages, { title = "Cards", isAborted = () => fal
 
 // ---------------------------------------------------------------- admin preview
 
-// A picture of one finished card, as an SVG: your picture plus the real white square and QR code.
+// A picture of one finished card, as an SVG, matching the artwork and QR used for printing.
 // The units are 1/1000 of a card, so the picture and the square line up exactly as they will print.
 function previewSvg(edition, url) {
   const art = loadArt(edition);
+  const image = `<image href="data:${art.mime};base64,${art.original.toString("base64")}" width="1000" height="1000" preserveAspectRatio="none"/>`;
+  if (edition === "silver") return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">${image}</svg>`;
+
   const k = 1000 / L.CARD;
   const q = L.QR[edition];
   const x = q.x * k, y = q.y * k, size = q.size * k;
@@ -248,8 +272,8 @@ function previewSvg(edition, url) {
   const m = size / (n + 2 * QUIET);
   const d = runs.map(([r, c, len]) => `M${num(x + (QUIET + c) * m)} ${num(y + (QUIET + r) * m)}h${num(len * m)}v${num(m)}h${num(-len * m)}z`).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">` +
-    `<image href="data:${art.mime};base64,${art.original.toString("base64")}" width="1000" height="1000" preserveAspectRatio="none"/>` +
-    `<rect x="${num(x)}" y="${num(y)}" width="${num(size)}" height="${num(size)}" fill="#fff"/>` +
+    image +
+    `<rect x="${num(x)}" y="${num(y)}" width="${num(size)}" height="${num(size)}" fill="rgb(${art.qrBackground.join(",")})"/>` +
     `<path d="${d}" fill="#000"/></svg>`;
 }
 

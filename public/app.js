@@ -79,11 +79,10 @@
     return len;
   }
 
-  function drawWish(el, rawText, startAt) {
+  function drawWish(el, rawText, startAt, wrapWidth = PEN.width) {
     const font = window.PEN_FONT;
     const text = normalizeForPen(rawText);
     if (!font || !text || [...text].some((c) => c !== " " && !font[c])) return null;
-    const wrapWidth = PEN.width;
 
     // Lay words out into lines no wider than the wrap width
     const words = text.split(" ").map((w) => ({
@@ -201,9 +200,8 @@
     reveal.classList.add("show");
   }
 
-  // The wish of the homepage gift, which has no sender. It is a real wish, addressed to whoever is
-  // reading, and it suits any bond or occasion.
-  const HOME_WISH = "Wishing you endless happiness";
+  // The homepage wish has no sender and is addressed to whoever opens the card.
+  const HOME_WISH = "Just For You";
 
   // Shown whenever the sender leaves the letter empty. It is written to suit every bond and every occasion.
   const DEFAULT_LETTER =
@@ -233,7 +231,7 @@
 
   function showGift(gift) {
     currentGift = gift;
-    let wishEnd = drawWish($("wish-text"), gift.wish, 0.3);
+    let wishEnd = drawWish($("wish-text"), gift.wish, 0.3, gift.wish === HOME_WISH ? 259 : PEN.width);
     if (wishEnd === null) wishEnd = writeText($("wish-text"), gift.wish, 0.3, 0.12);
 
     // The envelope appears once the wish has been written
