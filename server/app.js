@@ -3,7 +3,7 @@
 const path = require("path");
 const express = require("express");
 const { createCards, discardCards } = require("./slugs");
-const { buildPdf, previewSvg } = require("./sheet");
+const { buildPdf, previewSvg, artProblem } = require("./sheet");
 const { PER_SHEET } = require("./layout");
 const { createGiftRouter, deleteExpired, SLUG } = require("./gifts");
 const { rateLimit } = require("./ratelimit");
@@ -56,6 +56,8 @@ function createApp({ db, config, limits = {} }) {
       silverUrl: silverUrl(),
       goldExample: config.baseUrl + "/g/xxxxxxxxxx",
       giftDays: config.giftDays,
+      // null when the card picture is in place and usable, otherwise what is wrong with it
+      artProblems: { silver: artProblem("silver"), gold: artProblem("gold") },
       // The link to paste into the scheduler (only shown here, after signing in)
       cleanupUrl: config.cronSecret ? config.baseUrl + "/api/cron/cleanup?key=" + encodeURIComponent(config.cronSecret) : null,
     });
@@ -65,6 +67,8 @@ function createApp({ db, config, limits = {} }) {
   admin.get("/preview/:edition", (req, res) => {
     const edition = req.params.edition.replace(/\.svg$/, "");
     if (edition !== "silver" && edition !== "gold") return res.status(404).json({ error: "Not found." });
+    const problem = artProblem(edition);
+    if (problem) return res.status(404).json({ error: problem });
     res.type("image/svg+xml").send(previewSvg(edition, edition === "silver" ? silverUrl() : config.baseUrl + "/g/xxxxxxxxxx"));
   });
 
@@ -82,6 +86,8 @@ function createApp({ db, config, limits = {} }) {
   // Silver: every card carries the same QR code (the homepage), so nothing is stored. One sheet,
   // and the shop prints as many copies as they need.
   admin.get("/sheets/silver", async (req, res) => {
+    const problem = artProblem("silver");
+    if (problem) return res.status(409).json({ error: problem });
     const pdf = await buildPdf("silver", [Array(PER_SHEET).fill(silverUrl())], { title: "Silver sheet", isAborted: closedEarly(res) });
     if (pdf) sendPdf(res, pdf, "silver-sheet.pdf");
   });
@@ -94,6 +100,9 @@ function createApp({ db, config, limits = {} }) {
     if (!Number.isInteger(sheets) || sheets < 1 || sheets > config.maxSheets) {
       return res.status(400).json({ error: "Enter a whole number of sheets from 1 to " + config.maxSheets + "." });
     }
+    // Checked before any card is created, so a missing or unusable picture never leaves cards behind
+    const problem = artProblem("gold");
+    if (problem) return res.status(409).json({ error: problem });
     if (makingGold) return res.status(429).json({ error: "Another gold download is still being prepared. Please wait a moment." });
     makingGold = true;
     const aborted = closedEarly(res); // watch from the very start, so a page closed early is never missed

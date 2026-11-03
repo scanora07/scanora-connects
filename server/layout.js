@@ -1,27 +1,16 @@
 "use strict";
 
-// One place for every measurement of the printed sheet, so the card artwork (design/card.js) and the
-// PDF builder (sheet.js) can never disagree about where the QR code goes. Sizes are in inches.
+// Every measurement of the printed sheet in one place. All sizes are in inches.
+// The part you will most likely change is QR, at the bottom: where the QR code sits on each card.
 
 const SHEET = { width: 13, height: 19 };   // the paper the shop prints on
 const CARD = 2.25;                          // finished (trimmed) card, square
 const GUTTER = 0.1;                         // gap between neighbouring cards, cut away
-const BLEED = GUTTER / 2;                   // artwork runs this far past the trim edge, so a slightly
-                                            // off cut never shows white paper
+const BLEED = GUTTER / 2;                   // the picture is extended this far past every card edge, so a
+                                            // slightly off cut never shows white paper
 const COLS = 5;
 const ROWS = 8;
 const PER_SHEET = COLS * ROWS;
-
-// Artwork is drawn at 600 dpi. A card plus its bleed on every side is the size of one artwork image.
-const DPI = 600;
-const ART_PX = Math.round((CARD + 2 * BLEED) * DPI);   // 1410
-const TRIM_PX = Math.round(CARD * DPI);                 // 1350
-const BLEED_PX = Math.round(BLEED * DPI);               // 30
-
-// The white square that carries the QR code, in pixels measured from the card's trim corner.
-// It is a perfect square with sharp corners (radius 0), centred left to right. The QR code's own
-// quiet border is part of the square.
-const PLATE_PX = { size: 600, top: 560, radius: 0 };
 
 const gridWidth = COLS * CARD + (COLS - 1) * GUTTER;    // 11.65
 const gridHeight = ROWS * CARD + (ROWS - 1) * GUTTER;   // 18.7
@@ -30,4 +19,22 @@ const MARGIN = {
   y: (SHEET.height - gridHeight) / 2,                    // 0.15
 };
 
-module.exports = { SHEET, CARD, GUTTER, BLEED, COLS, ROWS, PER_SHEET, DPI, ART_PX, TRIM_PX, BLEED_PX, PLATE_PX, MARGIN };
+// Where the QR code goes on each card, measured from the card's top-left corner (the trimmed edge).
+//   x     distance from the left edge to the left side of the white square
+//   y     distance from the top edge to the top of the white square
+//   size  width and height of the white square (it is always a perfect square with sharp corners)
+// The QR code is drawn inside the white square with a quiet white border, so keep size at 1 or more.
+// The picture you put in server/art is shown exactly as it is; this square is drawn on top of it,
+// so leave that area of your picture plain and light.
+// Example: a square centred left to right is x = (2.25 - size) / 2.
+const QR = {
+  silver: { x: 0.625, y: 0.93, size: 1 },
+  gold:   { x: 0.625, y: 0.93, size: 1 },
+};
+
+for (const [name, q] of Object.entries(QR)) {
+  const ok = [q.x, q.y, q.size].every(Number.isFinite) && q.size > 0 && q.x >= 0 && q.y >= 0 && q.x + q.size <= CARD && q.y + q.size <= CARD;
+  if (!ok) throw new Error("The QR position for the " + name + " card (server/layout.js) must lie inside the " + CARD + " inch card.");
+}
+
+module.exports = { SHEET, CARD, GUTTER, BLEED, COLS, ROWS, PER_SHEET, MARGIN, QR };

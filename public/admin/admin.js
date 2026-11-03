@@ -4,7 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const views = { loading: $("v-loading"), login: $("v-login"), app: $("v-app") };
 
-  let settings = { maxSheets: 25, perSheet: 40, silverUrl: "", giftDays: 7, cleanupUrl: null };
+  let settings = { maxSheets: 25, perSheet: 40, silverUrl: "", giftDays: 7, cleanupUrl: null, artProblems: { silver: null, gold: null } };
   let busy = false;
 
   function show(name) {
@@ -88,7 +88,7 @@
     $("sheets-hint").textContent = good
       ? n + " sheet" + (n === 1 ? "" : "s") + " = " + (n * settings.perSheet).toLocaleString("en-IN") + " cards, each with its own QR code."
       : "Enter a whole number from 1 to " + settings.maxSheets + ".";
-    $("gold-dl").disabled = busy || !good;
+    $("gold-dl").disabled = busy || !good || Boolean(settings.artProblems.gold);
   }
 
   function renderChips() {
@@ -162,13 +162,27 @@
     setTimeout(() => { btn.textContent = "Copy link"; }, 2000);
   });
 
+  // ---------------- Card pictures ----------------
+  // The cards are printed from two pictures kept on the server. If one is missing or unusable, say why
+  // (instead of a broken image) and switch that card's download off.
+  function renderArt() {
+    for (const edition of ["silver", "gold"]) {
+      const problem = settings.artProblems[edition];
+      const img = $(edition + "-img");
+      img.hidden = Boolean(problem);
+      $(edition + "-art").hidden = !problem;
+      $(edition + "-art").textContent = problem || "";
+      if (!problem) img.src = img.dataset.src + "?t=" + Date.now(); // always the current picture
+    }
+    $("silver-dl").disabled = Boolean(settings.artProblems.silver);
+  }
+
   // ---------------- Start-up and sign-in ----------------
   async function openApp() {
     settings = await getJson("/config");
     $("silver-url").textContent = settings.silverUrl;
     document.querySelectorAll(".per-sheet").forEach((el) => { el.textContent = settings.perSheet; });
-    // The card pictures need the sign-in, so they are only requested now (not when the page first loads)
-    document.querySelectorAll("img[data-src]").forEach((img) => { img.src = img.dataset.src; });
+    renderArt();
     renderChips();
     renderCleanup();
     validate();

@@ -34,10 +34,11 @@
       <section class="panel">
         <h2>Silver sheet</h2>
         <div class="product">
-          <img class="card-img" data-src="/api/admin/preview/silver.svg" alt="Silver card" width="230" height="230">
+          <img id="silver-img" class="card-img" data-src="/api/admin/preview/silver.svg" alt="Silver card" width="230" height="230">
           <div>
             <p class="muted">Every silver card has the same QR code. It opens the gift page on the homepage:</p>
             <p><code id="silver-url"></code></p>
+            <p id="silver-art" class="error" role="alert" hidden></p>
             <p class="muted small">One sheet of <span class="per-sheet">40</span> cards. Give the file to the shop and they print as many copies as they need. Nothing is saved when you download it.</p>
             <button id="silver-dl" class="primary" type="button">Download silver sheet (PDF)</button>
             <p id="silver-error" class="error" role="alert" hidden></p>
@@ -48,9 +49,10 @@
       <section class="panel">
         <h2>Gold sheets</h2>
         <div class="product">
-          <img class="card-img" data-src="/api/admin/preview/gold.svg" alt="Gold card" width="230" height="230">
+          <img id="gold-img" class="card-img" data-src="/api/admin/preview/gold.svg" alt="Gold card" width="230" height="230">
           <div>
             <p class="muted">Every gold card has its own QR code, so each one opens a personal gift page that the sender fills in. Each sheet holds <span class="per-sheet">40</span> cards.</p>
+            <p id="gold-art" class="error" role="alert" hidden></p>
 
             <label for="sheets">How many sheets</label>
             <div class="count-row">
